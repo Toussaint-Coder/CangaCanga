@@ -2,11 +2,12 @@ import { useMemo } from "react";
 import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Plus, Search } from "lucide-react-native";
 
 import { RideMap, type RideMarker } from "@/components/map/RideMap";
+import { MAP_STYLE_SATELLITE } from "@/components/map/mapbox";
 import { RideCard } from "@/components/rides/RideCard";
 import { Avatar } from "@/components/ui/Avatar";
+import { Icon } from "@/components/ui/Icon";
 import { Screen } from "@/components/ui/Screen";
 import { Typography } from "@/components/ui/Typography";
 import { useCurrentLocation } from "@/features/location/location.hooks";
@@ -31,7 +32,7 @@ export default function HomeScreen() {
       (nearby.data ?? []).map((r) => ({
         id: r.id,
         coordinate: { latitude: r.pickup_lat, longitude: r.pickup_lng },
-        label: r.pickup_label,
+        label: r.destination_label ?? r.pickup_label,
       })),
     [nearby.data],
   );
@@ -53,7 +54,6 @@ export default function HomeScreen() {
           />
         }
       >
-        {/* Header */}
         <View className="flex-row items-center justify-between px-5 pb-4 pt-2">
           <View>
             <Typography variant="caption">{t("home.greeting")}</Typography>
@@ -68,14 +68,13 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        {/* Search */}
         <View className="px-5">
           <Pressable
             onPress={() => router.push("/(tabs)/explore")}
             className="flex-row items-center rounded-2xl border border-border bg-card px-4"
             style={{ height: 52 }}
           >
-            <Search size={18} color={colors.muted} />
+            <Icon name="search" size={18} color={colors.muted} />
             <Text
               style={{ fontFamily: fonts.regular }}
               className="ml-3 text-base text-mutedLight"
@@ -85,16 +84,17 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        {/* Map */}
         <View className="mt-4 px-5">
           <RideMap
             center={location ?? undefined}
             markers={markers}
-            height={200}
+            showUserLocation
+            height={220}
+            zoom={13}
+            styleURL={MAP_STYLE_SATELLITE}
           />
         </View>
 
-        {/* Create ride CTA */}
         <View className="mt-4 px-5">
           <Pressable
             onPress={() => router.push("/ride/create")}
@@ -115,12 +115,11 @@ export default function HomeScreen() {
               </Text>
             </View>
             <View className="h-10 w-10 items-center justify-center rounded-full bg-accent">
-              <Plus size={20} color={colors.secondary} />
+              <Icon name="directions-car" size={20} color={colors.secondary} />
             </View>
           </Pressable>
         </View>
 
-        {/* Upcoming trips */}
         {upcoming.length > 0 ? (
           <View className="mt-6">
             <View className="mb-3 flex-row items-center justify-between px-5">
@@ -143,7 +142,6 @@ export default function HomeScreen() {
           </View>
         ) : null}
 
-        {/* Nearby rides */}
         <View className="mt-6">
           <View className="mb-3 flex-row items-center justify-between px-5">
             <Typography variant="heading">{t("home.nearby")}</Typography>

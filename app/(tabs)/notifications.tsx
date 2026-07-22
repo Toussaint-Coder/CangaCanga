@@ -2,17 +2,9 @@ import { useEffect } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import {
-  Bell,
-  BellOff,
-  Check,
-  CalendarClock,
-  CircleX,
-  X,
-} from "lucide-react-native";
-import type { LucideIcon } from "lucide-react-native";
 
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { Screen } from "@/components/ui/Screen";
 import { Typography } from "@/components/ui/Typography";
 import {
@@ -28,13 +20,14 @@ import type { AppNotification } from "@/types/models";
 
 function buildIconMap(
   colors: ThemeColors,
-): Record<NotificationType, { icon: LucideIcon; color: string }> {
+): Record<NotificationType, { icon: IconName; color: string }> {
   return {
-    reservation_requested: { icon: Bell, color: colors.accent },
-    reservation_accepted: { icon: Check, color: colors.success },
-    reservation_rejected: { icon: X, color: colors.danger },
-    ride_cancelled: { icon: CircleX, color: colors.danger },
-    ride_reminder: { icon: CalendarClock, color: colors.warning },
+    reservation_requested: { icon: "notifications", color: colors.accent },
+    reservation_accepted: { icon: "check", color: colors.success },
+    reservation_rejected: { icon: "close", color: colors.danger },
+    ride_cancelled: { icon: "cancel", color: colors.danger },
+    ride_reminder: { icon: "event", color: colors.warning },
+    nearby_ride: { icon: "directions-car", color: colors.primary },
   };
 }
 
@@ -79,7 +72,6 @@ export default function NotificationsScreen() {
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => {
           const cfg = iconFor[item.type];
-          const Icon = cfg.icon;
           return (
             <Pressable
               onPress={() => handlePress(item)}
@@ -89,7 +81,7 @@ export default function NotificationsScreen() {
                 className="h-10 w-10 items-center justify-center rounded-full"
                 style={{ backgroundColor: cfg.color + "1A" }}
               >
-                <Icon size={18} color={cfg.color} />
+                <Icon name={cfg.icon} size={18} color={cfg.color} />
               </View>
               <View className="ml-3 flex-1">
                 <Text
@@ -120,7 +112,7 @@ export default function NotificationsScreen() {
         ListEmptyComponent={
           isLoading ? null : (
             <EmptyState
-              icon={BellOff}
+              icon="notifications-off"
               title={t("notifications.emptyTitle")}
               description={t("notifications.emptyDesc")}
             />

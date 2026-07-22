@@ -11,7 +11,7 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import * as ImagePicker from "expo-image-picker";
-import { Camera, Car, User } from "lucide-react-native";
+import { Icon } from "@/components/ui/Icon";
 
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -20,7 +20,12 @@ import { Screen } from "@/components/ui/Screen";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { useUpdateProfile } from "@/features/profile/profile.hooks";
 import { useAuthStore } from "@/stores/authStore";
-import { useThemeColors } from "@/theme";
+import { fonts, useThemeColors } from "@/theme";
+import {
+  formatPhoneDisplay,
+  isValidBurundiPhone,
+  normalizePhone,
+} from "@/utils/phone";
 
 export default function EditProfileScreen() {
   const { t } = useTranslation();
@@ -30,6 +35,11 @@ export default function EditProfileScreen() {
   const update = useUpdateProfile();
 
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
+  const [phone, setPhone] = useState(
+    profile?.phone_number
+      ? formatPhoneDisplay(profile.phone_number).replace("+257 ", "")
+      : "",
+  );
   const [plate, setPlate] = useState(profile?.vehicle_plate_number ?? "");
   const [pictureUri, setPictureUri] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -52,9 +62,14 @@ export default function EditProfileScreen() {
       setError(t("editProfile.nameError"));
       return;
     }
+    if (!isValidBurundiPhone(phone)) {
+      setError(t("editProfile.phoneError"));
+      return;
+    }
     update.mutate(
       {
         fullName,
+        phoneNumber: normalizePhone(phone),
         vehiclePlateNumber: plate,
         profilePictureUri: pictureUri ?? undefined,
       },
@@ -89,7 +104,7 @@ export default function EditProfileScreen() {
                 ) : profile?.profile_picture ? (
                   <Avatar uri={profile.profile_picture} size={96} />
                 ) : (
-                  <Camera size={26} color={colors.muted} />
+                  <Icon name="photo-camera" size={26} color={colors.muted} />
                 )}
               </View>
               <Text className="mt-2 text-sm font-medium text-accent">
@@ -103,15 +118,44 @@ export default function EditProfileScreen() {
               label={t("editProfile.fullName")}
               value={fullName}
               onChangeText={setFullName}
-              leftIcon={<User size={18} color={colors.muted} />}
+              leftIcon={<Icon name="person" size={18} color={colors.muted} />}
+            />
+            <Input
+              label={t("editProfile.phone")}
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+              placeholder={t("auth.login.phonePlaceholder")}
+              leftIcon={<Icon name="phone" size={18} color={colors.muted} />}
+              helperText={t("editProfile.phoneHint")}
             />
             <Input
               label={t("editProfile.plate")}
               value={plate}
               onChangeText={setPlate}
               autoCapitalize="characters"
-              leftIcon={<Car size={18} color={colors.muted} />}
+              leftIcon={
+                <Icon name="directions-car" size={18} color={colors.muted} />
+              }
             />
+
+            {profile ? (
+              <View className="rounded-2xl border border-border bg-card px-4 py-3">
+                <Text
+                  style={{ fontFamily: fonts.medium }}
+                  className="text-xs text-muted"
+                >
+                  {t("profile.rating")}
+                </Text>
+                <Text
+                  style={{ fontFamily: fonts.semibold }}
+                  className="mt-1 text-base text-primary"
+                >
+                  {(profile.rating ?? 0).toFixed(1)} ·{" "}
+                  {t("profile.reviews", { count: profile.rating_count ?? 0 })}
+                </Text>
+              </View>
+            ) : null}
 
             {error ? <Text className="text-sm text-danger">{error}</Text> : null}
 

@@ -9,8 +9,10 @@ import { persist, STORAGE_KEYS } from "@/lib/storage";
 import { en } from "./locales/en";
 import { fr } from "./locales/fr";
 import { sw } from "./locales/sw";
+import { rn } from "./locales/rn";
 
 export const LANGUAGES = [
+  { code: "rn", label: "Ikirundi" },
   { code: "fr", label: "Français" },
   { code: "en", label: "English" },
   { code: "sw", label: "Kiswahili" },
@@ -18,12 +20,19 @@ export const LANGUAGES = [
 
 export type LanguageCode = (typeof LANGUAGES)[number]["code"];
 
-export const DEFAULT_LANGUAGE: LanguageCode = "fr";
+export const DEFAULT_LANGUAGE: LanguageCode = "rn";
 
-const SUPPORTED_DAYJS_LOCALES = ["en", "fr", "sw"];
+/** Dayjs has no Kirundi locale — fall back to French (common in Burundi). */
+const DAYJS_LOCALE: Record<LanguageCode, string> = {
+  en: "en",
+  fr: "fr",
+  sw: "sw",
+  rn: "fr",
+};
 
 function syncDayjsLocale(code: string) {
-  dayjs.locale(SUPPORTED_DAYJS_LOCALES.includes(code) ? code : "fr");
+  const mapped = DAYJS_LOCALE[code as LanguageCode] ?? "fr";
+  dayjs.locale(mapped);
 }
 
 i18n.use(initReactI18next).init({
@@ -31,10 +40,11 @@ i18n.use(initReactI18next).init({
     en: { translation: en },
     fr: { translation: fr },
     sw: { translation: sw },
+    rn: { translation: rn },
   },
-  // The app is in French by default until the user changes it.
+  // The app is in Kirundi by default until the user changes it.
   lng: DEFAULT_LANGUAGE,
-  fallbackLng: DEFAULT_LANGUAGE,
+  fallbackLng: ["rn", "fr", "en"],
   interpolation: { escapeValue: false },
   returnNull: false,
   // Use i18next's built-in plural resolver (singular / *_plural keys) instead of
@@ -57,6 +67,11 @@ export async function hydrateLanguage(): Promise<void> {
 export async function setLanguage(code: LanguageCode): Promise<void> {
   await i18n.changeLanguage(code);
   await persist.set(STORAGE_KEYS.language, code);
+  // Refresh daily reminder copy in the newly selected language.
+  const { scheduleDailyRideReminders } = await import(
+    "@/features/notifications/dailyReminders"
+  );
+  void scheduleDailyRideReminders();
 }
 
 export default i18n;

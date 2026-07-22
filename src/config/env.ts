@@ -41,6 +41,9 @@ export const env = {
     // All R2 credentials live server-side in the `r2-presign` Edge Function.
     publicUrl: process.env.EXPO_PUBLIC_R2_PUBLIC_URL ?? "",
   },
+  eas: {
+    projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? "",
+  },
 } as const;
 
 export const isMapboxConfigured = () => env.mapbox.accessToken.length > 0;

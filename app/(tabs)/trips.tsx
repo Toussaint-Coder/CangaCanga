@@ -2,11 +2,11 @@ import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Car, Ticket } from "lucide-react-native";
 
 import { RideCard } from "@/components/rides/RideCard";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
 import { Screen } from "@/components/ui/Screen";
 import { Typography } from "@/components/ui/Typography";
 import { useMyRides } from "@/features/rides/rides.hooks";
@@ -66,12 +66,14 @@ export default function TripsScreen() {
                 )}
               >
                 {r === "passenger" ? (
-                  <Ticket
+                  <Icon
+                    name="confirmation-number"
                     size={15}
                     color={active ? colors.secondary : colors.muted}
                   />
                 ) : (
-                  <Car
+                  <Icon
+                    name="directions-car"
                     size={15}
                     color={active ? colors.secondary : colors.muted}
                   />
@@ -101,7 +103,7 @@ export default function TripsScreen() {
         {role === "passenger" ? (
           (myReservations.data ?? []).length === 0 ? (
             <EmptyState
-              icon={Ticket}
+              icon="confirmation-number"
               title={t("trips.noReservationsTitle")}
               description={t("trips.noReservationsDesc")}
             />
@@ -123,7 +125,7 @@ export default function TripsScreen() {
           )
         ) : (myRides.data ?? []).length === 0 ? (
           <EmptyState
-            icon={Car}
+            icon="directions-car"
             title={t("trips.noRidesTitle")}
             description={t("trips.noRidesDesc")}
           />

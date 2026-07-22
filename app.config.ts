@@ -1,12 +1,8 @@
 import { ExpoConfig, ConfigContext } from "expo/config";
 
 /**
- * Dynamic Expo config.
- *
- * Secrets are read from the environment (see `.env.example`). Nothing is
- * hardcoded here. The Mapbox *download* token (secret scope, starts with
- * `sk.`) is only needed at build time for the native SDK download and is
- * kept separate from the *public* access token used at runtime.
+ * Fresh Expo config for CangaCanga (SDK 52).
+ * Secrets come from `.env` — see `.env.example`.
  */
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -17,8 +13,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: "portrait",
   icon: "./assets/icon.png",
   userInterfaceStyle: "light",
-  newArchEnabled: true,
+  // Mapbox @rnmapbox/maps hits ViewTagResolver races on RN 0.76 New Arch.
+  // Keep Fabric off until a newer Mapbox release is fully verified.
+  newArchEnabled: false,
   splash: {
+    // Brand logo centered on the brand background (not a full-bleed image).
     image: "./assets/splash.png",
     resizeMode: "contain",
     backgroundColor: "#F8F9FA",
@@ -31,7 +30,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       NSLocationWhenInUseUsageDescription:
         "CangaCanga uses your location to show nearby rides and set your pickup point.",
       NSPhotoLibraryUsageDescription:
-        "CangaCanga needs access to your photos so you can set a profile picture.",
+        "CangaCanga needs access to your photos so you can set a profile picture and add a vehicle photo.",
+      NSCameraUsageDescription:
+        "CangaCanga needs the camera so you can take a profile or vehicle photo.",
+      NSPhotoLibraryAddUsageDescription:
+        "CangaCanga may save photos you take for your profile or vehicle.",
     },
   },
   android: {
@@ -43,7 +46,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     permissions: [
       "ACCESS_COARSE_LOCATION",
       "ACCESS_FINE_LOCATION",
+      "CAMERA",
       "READ_EXTERNAL_STORAGE",
+      "READ_MEDIA_IMAGES",
+      "POST_NOTIFICATIONS",
+      "VIBRATE",
+      "RECEIVE_BOOT_COMPLETED",
+      "SCHEDULE_EXACT_ALARM",
     ],
   },
   web: {
@@ -53,16 +62,16 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     "expo-router",
+    "expo-dev-client",
     "expo-asset",
+    "expo-font",
+    "expo-file-system",
+    "./plugins/withAndroidArm64Only",
     [
       "expo-notifications",
       {
         icon: "./assets/notification_icon.png",
         color: "#2563EB",
-        // Bundles the custom sound so it can be referenced by file name
-        // ("notification_sound.wav") on the Android channel and in push
-        // payloads. WAV (PCM) is used because iOS ignores mp3 for notification
-        // sounds; it was converted from the provided notification_sound.mp3.
         sounds: ["./assets/notification_sound.wav"],
       },
     ],
@@ -70,10 +79,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       "expo-build-properties",
       {
         android: {
-          // Expo SDK 52 defaults to Kotlin 1.9.25; expo-modules-core then
-          // selects Compose Compiler 1.5.15. Keep both in sync here so the
-          // pairing survives `expo prebuild`.
           kotlinVersion: "1.9.25",
+          // Keep release packaging simple/reliable. Size is already cut by
+          // arm64-only. Enable minify later once the app launches cleanly.
+          enableProguardInReleaseBuilds: false,
+          enableShrinkResourcesInReleaseBuilds: false,
+          useLegacyPackaging: false,
         },
       },
     ],
@@ -88,13 +99,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       "expo-image-picker",
       {
         photosPermission:
-          "CangaCanga needs access to your photos so you can set a profile picture.",
+          "CangaCanga needs access to your photos so you can set a profile picture and add a vehicle photo.",
+        cameraPermission:
+          "CangaCanga needs the camera so you can take a profile or vehicle photo.",
       },
     ],
     [
       "@rnmapbox/maps",
       {
-        // Secret download token (sk.*) used only during native build.
         RNMapboxMapsDownloadToken: process.env.MAPBOX_DOWNLOAD_TOKEN ?? "",
       },
     ],
@@ -104,6 +116,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         backgroundColor: "#F8F9FA",
         image: "./assets/splash.png",
         imageWidth: 200,
+        resizeMode: "contain",
       },
     ],
   ],
@@ -112,6 +125,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   extra: {
     router: { origin: false },
-    eas: {},
+    eas: {
+      // Required for Expo push tokens on physical devices. Set in `.env`:
+      // EXPO_PUBLIC_EAS_PROJECT_ID=<uuid from `eas init` / expo.dev>
+      projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? "",
+    },
   },
 });

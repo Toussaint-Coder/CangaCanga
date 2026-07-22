@@ -1,0 +1,32 @@
+-- ============================================================================
+-- One-time push delivery setup for CangaCanga
+-- Run in the Supabase SQL editor AFTER deploying `send-push`:
+--   supabase functions deploy send-push
+--
+-- Replace the placeholders, then execute.
+-- ============================================================================
+
+-- Preferred: Vault secrets (hosted Supabase)
+-- select vault.create_secret(
+--   'https://YOUR_PROJECT_REF.supabase.co',
+--   'cangacanga_edge_url'
+-- );
+-- select vault.create_secret(
+--   'YOUR_SERVICE_ROLE_KEY',
+--   'cangacanga_service_role_key'
+-- );
+
+-- Fallback: database settings
+-- alter database postgres
+--   set app.settings.edge_url = 'https://YOUR_PROJECT_REF.supabase.co';
+-- alter database postgres
+--   set app.settings.service_role_key = 'YOUR_SERVICE_ROLE_KEY';
+
+-- Quick self-test (creates a notification for yourself — replace USER_UUID):
+-- select public.push_notification(
+--   'USER_UUID'::uuid,
+--   'ride_reminder',
+--   'Push test',
+--   'If you see this on your phone, push delivery works.',
+--   '{}'::jsonb
+-- );

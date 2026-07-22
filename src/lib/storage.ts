@@ -36,6 +36,8 @@ export const persist = {
 
 export const STORAGE_KEYS = {
   onboardingSeen: "onboarding_seen",
+  permissionsSetupSeen: "permissions_setup_seen",
+  languageSetupSeen: "language_setup_seen",
   lastKnownLocation: "last_known_location",
   language: "language",
   theme: "theme",

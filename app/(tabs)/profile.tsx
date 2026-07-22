@@ -1,24 +1,11 @@
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import {
-  Car,
-  Check,
-  ChevronRight,
-  Globe,
-  LogOut,
-  Moon,
-  Phone,
-  Smartphone,
-  Star,
-  Sun,
-  UserCog,
-  Route as RouteIcon,
-} from "lucide-react-native";
-import type { LucideIcon } from "lucide-react-native";
 
 import { Avatar } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
+import { Icon, type IconName } from "@/components/ui/Icon";
+import { MadeByBrand } from "@/components/ui/MadeByBrand";
 import { Screen } from "@/components/ui/Screen";
 import { Typography } from "@/components/ui/Typography";
 import { useProfileStats } from "@/features/profile/profile.hooks";
@@ -69,7 +56,6 @@ export default function ProfileScreen() {
           <Typography variant="title">{t("profile.title")}</Typography>
         </View>
 
-        {/* Identity card */}
         <View className="px-5">
           <Card className="items-center py-6">
             <Avatar
@@ -81,7 +67,7 @@ export default function ProfileScreen() {
               {profile?.full_name}
             </Typography>
             <View className="mt-1 flex-row items-center">
-              <Star size={13} color={colors.star} fill={colors.star} />
+              <Icon name="star" size={13} color={colors.star} />
               <Text
                 style={{ fontFamily: fonts.medium }}
                 className="ml-1 text-sm text-muted"
@@ -95,25 +81,23 @@ export default function ProfileScreen() {
           </Card>
         </View>
 
-        {/* Quick stats */}
         <View className="mt-4 flex-row gap-x-3 px-5">
           <StatTile
-            icon={RouteIcon}
+            icon="alt-route"
             label={t("profile.totalTrips")}
             value={String(stats?.totalTrips ?? 0)}
           />
           <StatTile
-            icon={Star}
+            icon="star"
             label={t("profile.rating")}
             value={formatRating(profile?.rating)}
           />
         </View>
 
-        {/* Details */}
         <View className="mt-4 px-5">
           <Card padded={false}>
             <DetailRow
-              icon={Phone}
+              icon="phone"
               label={t("profile.phone")}
               value={
                 profile
@@ -123,14 +107,13 @@ export default function ProfileScreen() {
             />
             <View className="h-px bg-border" />
             <DetailRow
-              icon={Car}
+              icon="directions-car"
               label={t("profile.vehiclePlate")}
               value={profile?.vehicle_plate_number || t("common.notSet")}
             />
           </Card>
         </View>
 
-        {/* Language */}
         <View className="mt-4 px-5">
           <Text
             style={{ fontFamily: fonts.medium }}
@@ -148,7 +131,7 @@ export default function ProfileScreen() {
                     onPress={() => setLanguage(lang.code as LanguageCode)}
                     className="flex-row items-center p-4"
                   >
-                    <Globe size={18} color={colors.muted} />
+                    <Icon name="language" size={18} color={colors.muted} />
                     <Text
                       style={{ fontFamily: fonts.medium }}
                       className="ml-3 flex-1 text-sm text-primary"
@@ -156,7 +139,7 @@ export default function ProfileScreen() {
                       {lang.label}
                     </Text>
                     {active ? (
-                      <Check size={18} color={colors.accent} />
+                      <Icon name="check" size={18} color={colors.accent} />
                     ) : null}
                   </Pressable>
                 </View>
@@ -165,7 +148,6 @@ export default function ProfileScreen() {
           </Card>
         </View>
 
-        {/* Theme */}
         <View className="mt-4 px-5">
           <Text
             style={{ fontFamily: fonts.medium }}
@@ -176,27 +158,31 @@ export default function ProfileScreen() {
           <Card padded={false}>
             {THEME_OPTIONS.map((option, index) => {
               const active = themePreference === option;
-              const Icon =
+              const themeIcon: IconName =
                 option === "light"
-                  ? Sun
+                  ? "light-mode"
                   : option === "dark"
-                    ? Moon
-                    : Smartphone;
+                    ? "dark-mode"
+                    : "smartphone";
               return (
                 <View key={option}>
                   {index > 0 ? <View className="h-px bg-border" /> : null}
                   <Pressable
-                    onPress={() => setThemePreference(option as ThemePreference)}
+                    onPress={() =>
+                      setThemePreference(option as ThemePreference)
+                    }
                     className="flex-row items-center p-4"
                   >
-                    <Icon size={18} color={colors.muted} />
+                    <Icon name={themeIcon} size={18} color={colors.muted} />
                     <Text
                       style={{ fontFamily: fonts.medium }}
                       className="ml-3 flex-1 text-sm text-primary"
                     >
                       {t(`theme.${option}`)}
                     </Text>
-                    {active ? <Check size={18} color={colors.accent} /> : null}
+                    {active ? (
+                      <Icon name="check" size={18} color={colors.accent} />
+                    ) : null}
                   </Pressable>
                 </View>
               );
@@ -204,22 +190,25 @@ export default function ProfileScreen() {
           </Card>
         </View>
 
-        {/* Actions */}
         <View className="mt-4 px-5">
           <Card padded={false}>
             <ActionRow
-              icon={UserCog}
+              icon="manage-accounts"
               label={t("profile.editProfile")}
               onPress={() => router.push("/profile/edit")}
             />
             <View className="h-px bg-border" />
             <ActionRow
-              icon={LogOut}
+              icon="logout"
               label={t("profile.logout")}
               danger
               onPress={confirmLogout}
             />
           </Card>
+        </View>
+
+        <View className="mt-10 px-5 pb-4">
+          <MadeByBrand />
         </View>
       </ScrollView>
     </Screen>
@@ -227,18 +216,18 @@ export default function ProfileScreen() {
 }
 
 function StatTile({
-  icon: Icon,
+  icon,
   label,
   value,
 }: {
-  icon: LucideIcon;
+  icon: IconName;
   label: string;
   value: string;
 }) {
   const colors = useThemeColors();
   return (
     <Card className="flex-1">
-      <Icon size={18} color={colors.accent} />
+      <Icon name={icon} size={18} color={colors.accent} />
       <Text
         style={{ fontFamily: fonts.bold }}
         className="mt-2 text-xl text-primary"
@@ -256,18 +245,18 @@ function StatTile({
 }
 
 function DetailRow({
-  icon: Icon,
+  icon,
   label,
   value,
 }: {
-  icon: LucideIcon;
+  icon: IconName;
   label: string;
   value: string;
 }) {
   const colors = useThemeColors();
   return (
     <View className="flex-row items-center p-4">
-      <Icon size={18} color={colors.muted} />
+      <Icon name={icon} size={18} color={colors.muted} />
       <View className="ml-3">
         <Text
           style={{ fontFamily: fonts.regular }}
@@ -287,12 +276,12 @@ function DetailRow({
 }
 
 function ActionRow({
-  icon: Icon,
+  icon,
   label,
   onPress,
   danger,
 }: {
-  icon: LucideIcon;
+  icon: IconName;
   label: string;
   onPress: () => void;
   danger?: boolean;
@@ -300,14 +289,20 @@ function ActionRow({
   const colors = useThemeColors();
   return (
     <Pressable onPress={onPress} className="flex-row items-center p-4">
-      <Icon size={18} color={danger ? colors.danger : colors.primary} />
+      <Icon
+        name={icon}
+        size={18}
+        color={danger ? colors.danger : colors.primary}
+      />
       <Text
         style={{ fontFamily: fonts.medium }}
         className={`ml-3 flex-1 text-sm ${danger ? "text-danger" : "text-primary"}`}
       >
         {label}
       </Text>
-      {!danger ? <ChevronRight size={18} color={colors.mutedLight} /> : null}
+      {!danger ? (
+        <Icon name="chevron-right" size={18} color={colors.mutedLight} />
+      ) : null}
     </Pressable>
   );
 }

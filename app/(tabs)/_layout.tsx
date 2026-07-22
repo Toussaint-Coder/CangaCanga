@@ -1,16 +1,11 @@
 import { Pressable, View } from "react-native";
 import { Redirect, Tabs, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import {
-  Bell,
-  Compass,
-  Home,
-  Plus,
-  Ticket,
-  User,
-} from "lucide-react-native";
+import { MotiView } from "moti";
 
+import { Icon } from "@/components/ui/Icon";
 import { useAuthStore } from "@/stores/authStore";
+import { useCurrentLocation } from "@/features/location/location.hooks";
 import { useRealtime } from "@/features/notifications/useRealtime";
 import { usePushNotifications } from "@/features/notifications/usePushNotifications";
 import { useUnreadCount } from "@/features/notifications/notifications.hooks";
@@ -23,11 +18,10 @@ export default function TabsLayout() {
   const router = useRouter();
   const { data: unread } = useUnreadCount();
 
-  // App-wide realtime event bus (replaces Socket.io). Presents in-app
-  // notifications (sound + vibration) when new rows arrive.
   useRealtime();
-  // Registers the device for background/killed push delivery + tap handling.
   usePushNotifications();
+  // Keep last known location synced for nearby-ride notifications.
+  useCurrentLocation();
 
   if (status === "unauthenticated") {
     return <Redirect href="/(auth)/login" />;
@@ -57,7 +51,9 @@ export default function TabsLayout() {
           name="index"
           options={{
             title: t("tabs.home"),
-            tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
+            tabBarIcon: ({ color, size }) => (
+              <Icon name="home" size={size} color={color} />
+            ),
           }}
         />
         <Tabs.Screen
@@ -65,7 +61,7 @@ export default function TabsLayout() {
           options={{
             title: t("tabs.explore"),
             tabBarIcon: ({ color, size }) => (
-              <Compass size={size} color={color} />
+              <Icon name="explore" size={size} color={color} />
             ),
           }}
         />
@@ -74,7 +70,7 @@ export default function TabsLayout() {
           options={{
             title: t("tabs.trips"),
             tabBarIcon: ({ color, size }) => (
-              <Ticket size={size} color={color} />
+              <Icon name="confirmation-number" size={size} color={color} />
             ),
           }}
         />
@@ -84,7 +80,7 @@ export default function TabsLayout() {
             title: t("tabs.notifications"),
             tabBarIcon: ({ color, size }) => (
               <View>
-                <Bell size={size} color={color} />
+                <Icon name="notifications" size={size} color={color} />
                 {unread && unread > 0 ? (
                   <View className="absolute -right-1.5 -top-1 h-2.5 w-2.5 rounded-full bg-accent" />
                 ) : null}
@@ -96,12 +92,13 @@ export default function TabsLayout() {
           name="profile"
           options={{
             title: t("tabs.profile"),
-            tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
+            tabBarIcon: ({ color, size }) => (
+              <Icon name="person" size={size} color={color} />
+            ),
           }}
         />
       </Tabs>
 
-      {/* Floating action button — Create Ride */}
       <Pressable
         onPress={() => router.push("/ride/create")}
         style={[
@@ -119,7 +116,18 @@ export default function TabsLayout() {
           },
         ]}
       >
-        <Plus size={26} color={colors.secondary} />
+        <MotiView
+          from={{ translateX: -4 }}
+          animate={{ translateX: 4 }}
+          transition={{
+            type: "timing",
+            duration: 700,
+            loop: true,
+            repeatReverse: true,
+          }}
+        >
+          <Icon name="directions-car" size={26} color={colors.secondary} />
+        </MotiView>
       </Pressable>
     </View>
   );

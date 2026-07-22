@@ -6,5 +6,6 @@ declare namespace NodeJS {
     EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN: string;
     MAPBOX_DOWNLOAD_TOKEN?: string;
     EXPO_PUBLIC_R2_PUBLIC_URL: string;
+    EXPO_PUBLIC_EAS_PROJECT_ID?: string;
   }
 }

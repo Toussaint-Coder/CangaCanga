@@ -1,5 +1,7 @@
 import { supabase } from "@/services/supabase";
 import { uploadProfilePicture } from "@/services/r2";
+import { normalizePhone, phoneToAuthEmail } from "@/utils/phone";
+import i18n from "@/i18n";
 import type { Profile } from "@/types/models";
 
 export async function getProfile(id: string): Promise<Profile | null> {
@@ -14,6 +16,7 @@ export async function getProfile(id: string): Promise<Profile | null> {
 
 export interface UpdateProfileInput {
   fullName?: string;
+  phoneNumber?: string;
   vehiclePlateNumber?: string | null;
   profilePictureUri?: string; // new local image to upload
 }
@@ -24,11 +27,22 @@ export async function updateProfile(
 ): Promise<Profile> {
   const patch: {
     full_name?: string;
+    phone_number?: string;
     vehicle_plate_number?: string | null;
     profile_picture?: string;
   } = {};
 
   if (input.fullName !== undefined) patch.full_name = input.fullName.trim();
+  if (input.phoneNumber !== undefined) {
+    const phone = normalizePhone(input.phoneNumber);
+    patch.phone_number = phone;
+    // Keep Auth login identity in sync (phone → pseudo-email).
+    const { error: authError } = await supabase.auth.updateUser({
+      email: phoneToAuthEmail(phone),
+      data: { phone_number: phone },
+    });
+    if (authError) throw authError;
+  }
   if (input.vehiclePlateNumber !== undefined) {
     patch.vehicle_plate_number = input.vehiclePlateNumber?.trim() || null;
   }
@@ -46,7 +60,12 @@ export async function updateProfile(
     .select("*")
     .single();
 
-  if (error) throw error;
+  if (error) {
+    if (error.code === "23505") {
+      throw new Error(i18n.t("editProfile.phoneTaken"));
+    }
+    throw error;
+  }
   return data;
 }
 

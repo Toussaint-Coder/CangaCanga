@@ -86,8 +86,10 @@ export const shadow = {
 } as const;
 
 export const fonts = {
-  regular: "Inter_400Regular",
-  medium: "Inter_500Medium",
-  semibold: "Inter_600SemiBold",
-  bold: "Inter_700Bold",
+  regular: "Lufga-Regular",
+  medium: "Lufga-Medium",
+  semibold: "Lufga-SemiBold",
+  bold: "Lufga-Bold",
+  extrabold: "Lufga-ExtraBold",
+  light: "Lufga-Light",
 } as const;

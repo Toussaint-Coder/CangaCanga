@@ -47,25 +47,33 @@ export async function markAllAsRead(): Promise<void> {
 
 /**
  * Upserts this device's Expo push token so the backend can deliver push
- * notifications while the app is backgrounded or killed. Keyed on the token so
- * the same device is not stored twice.
+ * notifications while the app is backgrounded or killed. Uses a SECURITY
+ * DEFINER RPC so a token can be reclaimed when the same device switches users.
  */
 export async function savePushToken(
   token: string,
   platform: DevicePlatform,
 ): Promise<void> {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return;
+  const { error } = await supabase.rpc("upsert_device_token", {
+    p_token: token,
+    p_platform: platform,
+  });
 
-  await supabase.from("device_tokens").upsert(
-    {
-      user_id: auth.user.id,
-      token,
-      platform,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "token" },
-  );
+  // Fallback while migration 0007 is not yet applied on the remote project.
+  if (error) {
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) throw error;
+    const { error: upsertError } = await supabase.from("device_tokens").upsert(
+      {
+        user_id: auth.user.id,
+        token,
+        platform,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "token" },
+    );
+    if (upsertError) throw upsertError;
+  }
 }
 
 /** Removes a device token (used on sign-out so pushes stop for this device). */

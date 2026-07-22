@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from "react-native";
-import { Star } from "lucide-react-native";
 
+import { Icon } from "@/components/ui/Icon";
 import { fonts, useThemeColors } from "@/theme";
 import { formatRating } from "@/utils/format";
 
@@ -23,7 +23,7 @@ export function RatingStars({
   if (!editable) {
     return (
       <View className="flex-row items-center">
-        <Star size={size} color={colors.star} fill={colors.star} />
+        <Icon name="star" size={size} color={colors.star} />
         {showValue ? (
           <Text
             style={{ fontFamily: fonts.semibold }}
@@ -45,10 +45,10 @@ export function RatingStars({
           className="px-1"
           hitSlop={6}
         >
-          <Star
+          <Icon
+            name={value <= rating ? "star" : "star-border"}
             size={size}
             color={colors.star}
-            fill={value <= rating ? colors.star : "transparent"}
           />
         </Pressable>
       ))}

@@ -1,9 +1,9 @@
 import { Pressable, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, Clock, MapPin, Users } from "lucide-react-native";
 
 import { Avatar } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
+import { Icon } from "@/components/ui/Icon";
 import { RatingStars } from "@/components/ui/RatingStars";
 import { fonts, useThemeColors } from "@/theme";
 import {
@@ -11,6 +11,7 @@ import {
   formatDistance,
   formatPrice,
 } from "@/utils/format";
+import { formatPhoneDisplay } from "@/utils/phone";
 import type { NearbyRide, RideWithDriver } from "@/types/models";
 
 type AnyRide = (RideWithDriver | NearbyRide) & { distance_from_me?: number };
@@ -29,7 +30,6 @@ export function RideCard({ ride, onPress }: RideCardProps) {
     <Pressable onPress={onPress}>
       {({ pressed }) => (
         <Card style={{ opacity: pressed ? 0.9 : 1 }} className="mb-3">
-          {/* Driver row */}
           <View className="mb-3 flex-row items-center">
             <Avatar
               uri={driver?.profile_picture}
@@ -55,6 +55,17 @@ export function RideCard({ ride, onPress }: RideCardProps) {
                   </Text>
                 ) : null}
               </View>
+              {driver?.phone_number ? (
+                <View className="mt-1 flex-row items-center">
+                  <Icon name="phone" size={12} color={colors.muted} />
+                  <Text
+                    style={{ fontFamily: fonts.regular }}
+                    className="ml-1 text-xs text-muted"
+                  >
+                    {formatPhoneDisplay(driver.phone_number)}
+                  </Text>
+                </View>
+              ) : null}
             </View>
             <View className="items-end">
               <Text
@@ -72,10 +83,9 @@ export function RideCard({ ride, onPress }: RideCardProps) {
             </View>
           </View>
 
-          {/* Route */}
           <View className="rounded-xl bg-background p-3">
             <View className="flex-row items-center">
-              <MapPin size={14} color={colors.accent} />
+              <Icon name="place" size={14} color={colors.accent} />
               <Text
                 style={{ fontFamily: fonts.medium }}
                 className="ml-2 flex-1 text-sm text-primary"
@@ -86,7 +96,7 @@ export function RideCard({ ride, onPress }: RideCardProps) {
             </View>
             <View className="my-1 ml-1.5 h-4 w-px bg-border" />
             <View className="flex-row items-center">
-              <MapPin size={14} color={colors.primary} />
+              <Icon name="place" size={14} color={colors.primary} />
               <Text
                 style={{ fontFamily: fonts.medium }}
                 className="ml-2 flex-1 text-sm text-primary"
@@ -97,10 +107,9 @@ export function RideCard({ ride, onPress }: RideCardProps) {
             </View>
           </View>
 
-          {/* Meta */}
           <View className="mt-3 flex-row items-center justify-between">
             <View className="flex-row items-center">
-              <Clock size={13} color={colors.muted} />
+              <Icon name="schedule" size={13} color={colors.muted} />
               <Text
                 style={{ fontFamily: fonts.regular }}
                 className="ml-1.5 text-xs text-muted"
@@ -110,7 +119,7 @@ export function RideCard({ ride, onPress }: RideCardProps) {
             </View>
 
             <View className="flex-row items-center">
-              <Users size={13} color={colors.muted} />
+              <Icon name="group" size={13} color={colors.muted} />
               <Text
                 style={{ fontFamily: fonts.regular }}
                 className="ml-1.5 text-xs text-muted"
@@ -121,7 +130,7 @@ export function RideCard({ ride, onPress }: RideCardProps) {
 
             {ride.distance_from_me != null ? (
               <View className="flex-row items-center">
-                <ArrowRight size={13} color={colors.muted} />
+                <Icon name="arrow-forward" size={13} color={colors.muted} />
                 <Text
                   style={{ fontFamily: fonts.regular }}
                   className="ml-1.5 text-xs text-muted"

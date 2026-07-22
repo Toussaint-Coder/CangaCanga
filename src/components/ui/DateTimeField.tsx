@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Platform, Pressable, Text, View } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { CalendarClock } from "lucide-react-native";
+import dayjs from "dayjs";
 
+import { Icon } from "@/components/ui/Icon";
 import { fonts, useThemeColors } from "@/theme";
 import { formatDeparture } from "@/utils/format";
 
@@ -11,6 +12,21 @@ interface DateTimeFieldProps {
   value: Date;
   onChange: (date: Date) => void;
   error?: string;
+  /** `date` / `time` / `datetime`. Default `datetime`. */
+  mode?: "datetime" | "date" | "time";
+  className?: string;
+}
+
+function mergeDateKeepTime(current: Date, picked: Date): Date {
+  const next = new Date(current);
+  next.setFullYear(picked.getFullYear(), picked.getMonth(), picked.getDate());
+  return next;
+}
+
+function mergeTimeKeepDate(current: Date, picked: Date): Date {
+  const next = new Date(current);
+  next.setHours(picked.getHours(), picked.getMinutes(), 0, 0);
+  return next;
 }
 
 export function DateTimeField({
@@ -18,13 +34,25 @@ export function DateTimeField({
   value,
   onChange,
   error,
+  mode = "datetime",
+  className,
 }: DateTimeFieldProps) {
   const colors = useThemeColors();
   const [show, setShow] = useState(false);
-  const [mode, setMode] = useState<"date" | "time">("date");
+  const [androidStep, setAndroidStep] = useState<"date" | "time">("date");
 
-  const openAndroid = () => {
-    setMode("date");
+  const openPicker = () => {
+    if (mode === "time") {
+      setAndroidStep("time");
+      setShow(true);
+      return;
+    }
+    if (mode === "date") {
+      setAndroidStep("date");
+      setShow(true);
+      return;
+    }
+    setAndroidStep("date");
     setShow(true);
   };
 
@@ -34,29 +62,48 @@ export function DateTimeField({
         setShow(false);
         return;
       }
-      if (mode === "date") {
-        // Keep the previous time, update the date, then ask for time.
-        const merged = new Date(value);
-        merged.setFullYear(
-          selected.getFullYear(),
-          selected.getMonth(),
-          selected.getDate(),
-        );
-        onChange(merged);
-        setMode("time");
+
+      if (mode === "time") {
+        onChange(mergeTimeKeepDate(value, selected));
+        setShow(false);
         return;
       }
-      const merged = new Date(value);
-      merged.setHours(selected.getHours(), selected.getMinutes());
-      onChange(merged);
+
+      if (mode === "date") {
+        onChange(mergeDateKeepTime(value, selected));
+        setShow(false);
+        return;
+      }
+
+      if (androidStep === "date") {
+        onChange(mergeDateKeepTime(value, selected));
+        setAndroidStep("time");
+        return;
+      }
+
+      onChange(mergeTimeKeepDate(value, selected));
       setShow(false);
-    } else if (selected) {
-      onChange(selected);
+      return;
+    }
+
+    if (selected) {
+      if (mode === "time") onChange(mergeTimeKeepDate(value, selected));
+      else if (mode === "date") onChange(mergeDateKeepTime(value, selected));
+      else onChange(selected);
     }
   };
 
+  const display =
+    mode === "time"
+      ? dayjs(value).format("HH:mm")
+      : mode === "date"
+        ? dayjs(value).format("DD MMM YYYY")
+        : formatDeparture(value.toISOString());
+
+  const iconName = mode === "time" ? "schedule" : "event";
+
   return (
-    <View className="w-full">
+    <View className={className ?? "w-full"}>
       {label ? (
         <Text
           style={{ fontFamily: fonts.medium }}
@@ -67,26 +114,33 @@ export function DateTimeField({
       ) : null}
 
       <Pressable
-        onPress={() => (Platform.OS === "android" ? openAndroid() : setShow(true))}
+        onPress={openPicker}
         className="flex-row items-center rounded-2xl border border-border bg-card px-4"
         style={{ minHeight: 52 }}
       >
-        <CalendarClock size={18} color={colors.muted} />
+        <Icon name={iconName} size={18} color={colors.muted} />
         <Text
           style={{ fontFamily: fonts.regular }}
           className="ml-3 flex-1 text-base text-primary"
         >
-          {formatDeparture(value.toISOString())}
+          {display}
         </Text>
       </Pressable>
 
       {show ? (
         <DateTimePicker
           value={value}
-          mode={Platform.OS === "ios" ? "datetime" : mode}
-          minimumDate={new Date()}
+          mode={
+            mode === "datetime"
+              ? Platform.OS === "ios"
+                ? "datetime"
+                : androidStep
+              : mode
+          }
+          is24Hour
+          minimumDate={new Date(new Date().setHours(0, 0, 0, 0))}
           onChange={handleChange}
-          display={Platform.OS === "ios" ? "inline" : "default"}
+          display={Platform.OS === "ios" ? "spinner" : "default"}
         />
       ) : null}
 

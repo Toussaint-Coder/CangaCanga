@@ -19,7 +19,12 @@ export type DeviceToken = DeviceTokenRow;
 export interface RideWithDriver extends RideRow {
   driver: Pick<
     ProfileRow,
-    "id" | "full_name" | "profile_picture" | "rating" | "vehicle_plate_number"
+    | "id"
+    | "full_name"
+    | "profile_picture"
+    | "rating"
+    | "vehicle_plate_number"
+    | "phone_number"
   >;
   distance_from_me?: number;
 }
@@ -27,7 +32,12 @@ export interface RideWithDriver extends RideRow {
 export interface NearbyRide extends NearbyRideRow {
   driver?: Pick<
     ProfileRow,
-    "id" | "full_name" | "profile_picture" | "rating" | "vehicle_plate_number"
+    | "id"
+    | "full_name"
+    | "profile_picture"
+    | "rating"
+    | "vehicle_plate_number"
+    | "phone_number"
   >;
 }
 

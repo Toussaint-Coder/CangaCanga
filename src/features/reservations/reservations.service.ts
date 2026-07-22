@@ -8,7 +8,7 @@ const PASSENGER_SELECT =
   "passenger:profiles!reservations_passenger_id_fkey(id, full_name, profile_picture, rating, phone_number)";
 
 const RIDE_SELECT =
-  "ride:rides!reservations_ride_id_fkey(*, driver:profiles!rides_driver_id_fkey(id, full_name, profile_picture, rating, vehicle_plate_number))";
+  "ride:rides!reservations_ride_id_fkey(*, driver:profiles!rides_driver_id_fkey(id, full_name, profile_picture, rating, vehicle_plate_number, phone_number))";
 
 /** Passenger requests a seat. Driver is notified via a DB trigger + realtime. */
 export async function reserveSeat(

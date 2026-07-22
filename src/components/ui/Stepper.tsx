@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from "react-native";
-import { Minus, Plus } from "lucide-react-native";
 
+import { Icon } from "@/components/ui/Icon";
 import { fonts, useThemeColors } from "@/theme";
 
 interface StepperProps {
@@ -23,7 +23,7 @@ export function Stepper({ value, min = 1, max = 8, onChange }: StepperProps) {
         className="h-10 w-10 items-center justify-center rounded-full border border-border bg-card"
         style={{ opacity: value <= min ? 0.4 : 1 }}
       >
-        <Minus size={18} color={colors.primary} />
+        <Icon name="remove" size={18} color={colors.primary} />
       </Pressable>
       <Text
         style={{ fontFamily: fonts.semibold }}
@@ -37,7 +37,7 @@ export function Stepper({ value, min = 1, max = 8, onChange }: StepperProps) {
         className="h-10 w-10 items-center justify-center rounded-full border border-border bg-card"
         style={{ opacity: value >= max ? 0.4 : 1 }}
       >
-        <Plus size={18} color={colors.primary} />
+        <Icon name="add" size={18} color={colors.primary} />
       </Pressable>
     </View>
   );

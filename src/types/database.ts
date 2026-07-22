@@ -28,7 +28,8 @@ export type NotificationType =
   | "reservation_accepted"
   | "reservation_rejected"
   | "ride_cancelled"
-  | "ride_reminder";
+  | "ride_reminder"
+  | "nearby_ride";
 
 export type ProfileRow = {
   id: string;
@@ -38,6 +39,9 @@ export type ProfileRow = {
   vehicle_plate_number: string | null;
   rating: number;
   rating_count: number;
+  last_lat: number | null;
+  last_lng: number | null;
+  last_location_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -59,6 +63,7 @@ export type RideRow = {
   status: RideStatus;
   distance_m: number | null;
   duration_s: number | null;
+  vehicle_picture: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -118,6 +123,9 @@ type ProfileInsert = {
   vehicle_plate_number?: string | null;
   rating?: number;
   rating_count?: number;
+  last_lat?: number | null;
+  last_lng?: number | null;
+  last_location_at?: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -139,6 +147,7 @@ type RideInsert = {
   status?: RideStatus;
   distance_m?: number | null;
   duration_s?: number | null;
+  vehicle_picture?: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -210,6 +219,14 @@ export type Database = {
           p_limit?: number;
         };
         Returns: NearbyRideRow[];
+      };
+      upsert_device_token: {
+        Args: { p_token: string; p_platform: string };
+        Returns: undefined;
+      };
+      update_my_location: {
+        Args: { p_lat: number; p_lng: number };
+        Returns: undefined;
       };
     };
     Enums: {

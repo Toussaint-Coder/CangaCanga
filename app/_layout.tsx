@@ -9,14 +9,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { useFonts } from "expo-font";
 import { QueryClientProvider } from "@tanstack/react-query";
-import {
-  useFonts,
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-} from "@expo-google-fonts/inter";
 
 import { queryClient } from "@/lib/queryClient";
 import { hydrateLanguage } from "@/i18n";
@@ -27,35 +21,62 @@ import { useThemeColors } from "@/theme";
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
+  const [fontsLoaded, fontError] = useFonts({
+    "Lufga-Light": require("../assets/fonts/fonnts.com-LufgaLight.ttf"),
+    "Lufga-Regular": require("../assets/fonts/fonnts.com-LufgaRegular.ttf"),
+    "Lufga-Medium": require("../assets/fonts/fonnts.com-LufgaMedium.ttf"),
+    "Lufga-SemiBold": require("../assets/fonts/fonnts.com-LufgaSemiBold.ttf"),
+    "Lufga-Bold": require("../assets/fonts/fonnts.com-LufgaBold.ttf"),
+    "Lufga-ExtraBold": require("../assets/fonts/fonnts.com-LufgaExtraBold.ttf"),
   });
 
   const initialize = useAuthStore((s) => s.initialize);
   const status = useAuthStore((s) => s.status);
   const colors = useThemeColors();
   const [prefsReady, setPrefsReady] = useState(false);
+  // When true we stop blocking on fonts/auth and show the UI.
+  const [bootstrapped, setBootstrapped] = useState(false);
+
+  // Prefer a successful font load so Lufga is available before first paint.
+  // fontError still unblocks so a bad font asset cannot brick the app forever.
+  const fontsReady = fontsLoaded || Boolean(fontError);
 
   useEffect(() => {
-    initialize();
+    void initialize();
   }, [initialize]);
 
   useEffect(() => {
-    Promise.all([hydrateLanguage(), useThemeStore.getState().hydrate()]).finally(
-      () => setPrefsReady(true),
-    );
+    Promise.all([
+      hydrateLanguage(),
+      useThemeStore.getState().hydrate(),
+    ]).finally(() => setPrefsReady(true));
   }, []);
 
   useEffect(() => {
-    if (fontsLoaded && prefsReady && status !== "loading") {
+    if (fontsReady && prefsReady && status !== "loading") {
+      setBootstrapped(true);
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded, prefsReady, status]);
+  }, [fontsReady, prefsReady, status]);
 
-  if (!fontsLoaded || !prefsReady || status === "loading") {
+  // Failsafe: never leave a blank screen if fonts/auth hang.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setPrefsReady(true);
+      setBootstrapped(true);
+      SplashScreen.hideAsync().catch(() => {});
+      if (useAuthStore.getState().status === "loading") {
+        useAuthStore.setState({
+          session: null,
+          profile: null,
+          status: "unauthenticated",
+        });
+      }
+    }, 4000);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (!bootstrapped) {
     return null;
   }
 

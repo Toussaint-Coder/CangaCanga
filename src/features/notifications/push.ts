@@ -20,35 +20,30 @@ export const VIBRATION_PATTERN = [0, 250, 150, 250];
 
 /** Marks notifications we present locally so the handler can tell them apart
  *  from remote pushes (which we suppress in the foreground to avoid dupes). */
-const LOCAL_SOURCE = "cangacanga-local";
+export const LOCAL_SOURCE = "cangacanga-local";
 
 let handlerConfigured = false;
 
 /**
- * Installs the foreground presentation handler. Local notifications we present
- * from the realtime subscription are shown (banner + sound + badge); remote
- * pushes arriving while the app is foregrounded are suppressed, because the
- * realtime subscription already renders an equivalent local notification and we
- * don't want the user to see it twice. In the background the OS shows the
- * remote push directly (this handler doesn't run there).
+ * Installs the foreground presentation handler so banners/sound work while the
+ * app is open. In the background the OS presents remote pushes directly.
  */
 export function configureNotificationHandler(): void {
   if (handlerConfigured) return;
   handlerConfigured = true;
 
   Notifications.setNotificationHandler({
-    handleNotification: async (notification) => {
-      const isLocal =
-        notification.request.content.data?.source === LOCAL_SOURCE;
-      return {
-        shouldShowBanner: isLocal,
+    handleNotification: async () =>
+      // Always present while foregrounded. Suppressing remote pushes here used
+      // to hide everything whenever Realtime failed — better a rare duplicate
+      // than a silent miss.
+      ({
+        shouldShowBanner: true,
         shouldShowList: true,
-        shouldPlaySound: isLocal,
+        shouldPlaySound: true,
         shouldSetBadge: true,
-        // Back-compat fields for older expo-notifications typings.
-        shouldShowAlert: isLocal,
-      } as Notifications.NotificationBehavior;
-    },
+        shouldShowAlert: true,
+      }) as Notifications.NotificationBehavior,
   });
 }
 
@@ -67,7 +62,37 @@ export async function ensureAndroidChannel(): Promise<void> {
     sound: NOTIFICATION_SOUND,
     lightColor: "#2563EB",
     lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+    bypassDnd: false,
   });
+}
+
+/** Resolves the EAS project id required by Expo push token registration. */
+function resolveEasProjectId(): string | undefined {
+  return (
+    process.env.EXPO_PUBLIC_EAS_PROJECT_ID ||
+    Constants.expoConfig?.extra?.eas?.projectId ||
+    Constants.easConfig?.projectId ||
+    undefined
+  );
+}
+
+/**
+ * Requests notification permission (with iOS alert/sound/badge options).
+ * Returns true when granted.
+ */
+export async function ensureNotificationPermissions(): Promise<boolean> {
+  const { status: existing } = await Notifications.getPermissionsAsync();
+  if (existing === "granted") return true;
+
+  const req = await Notifications.requestPermissionsAsync({
+    ios: {
+      allowAlert: true,
+      allowBadge: true,
+      allowSound: true,
+      allowDisplayInCarPlay: false,
+    },
+  });
+  return req.status === "granted";
 }
 
 /**
@@ -79,31 +104,36 @@ export async function ensureAndroidChannel(): Promise<void> {
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
   await ensureAndroidChannel();
 
-  if (!Device.isDevice) {
-    // Push tokens are only issued on physical devices.
+  const granted = await ensureNotificationPermissions();
+  if (!granted) {
+    if (__DEV__) console.warn("[push] Notification permission not granted");
     return null;
   }
 
-  const { status: existing } = await Notifications.getPermissionsAsync();
-  let status = existing;
-  if (existing !== "granted") {
-    const req = await Notifications.requestPermissionsAsync();
-    status = req.status;
+  if (!Device.isDevice) {
+    // Push tokens are only issued on physical devices; local notifications
+    // (Realtime + daily reminders) still work on simulators.
+    if (__DEV__) console.warn("[push] Skipping Expo push token on simulator");
+    return null;
   }
-  if (status !== "granted") return null;
 
-  const projectId =
-    Constants.expoConfig?.extra?.eas?.projectId ??
-    Constants.easConfig?.projectId;
+  const projectId = resolveEasProjectId();
+  if (!projectId) {
+    if (__DEV__) {
+      console.warn(
+        "[push] Missing EAS projectId. Set EXPO_PUBLIC_EAS_PROJECT_ID in .env " +
+          "(or extra.eas.projectId in app.config.ts) and rebuild.",
+      );
+    }
+    return null;
+  }
 
   try {
-    const { data } = await Notifications.getExpoPushTokenAsync(
-      projectId ? { projectId } : undefined,
-    );
+    const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
+    if (__DEV__) console.log("[push] Expo push token registered");
     return data;
-  } catch {
-    // Missing EAS projectId or no network — fail soft; in-app notifications
-    // still work via the realtime subscription.
+  } catch (err) {
+    if (__DEV__) console.warn("[push] getExpoPushTokenAsync failed", err);
     return null;
   }
 }
@@ -115,24 +145,38 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
 export async function presentLocalNotification(
   n: AppNotification,
 ): Promise<void> {
-  // Fire haptics right away so it's felt even before the banner renders.
-  Vibration.vibrate(VIBRATION_PATTERN);
+  try {
+    await ensureAndroidChannel();
+    Vibration.vibrate(VIBRATION_PATTERN);
 
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: n.title,
-      body: n.body,
-      data: { ...n.data, source: LOCAL_SOURCE, notificationId: n.id },
-      sound: NOTIFICATION_SOUND,
-      ...(Platform.OS === "android"
-        ? { vibrate: VIBRATION_PATTERN }
-        : {}),
-    },
-    // Present immediately; on Android route through our channel so the custom
-    // sound + vibration are applied.
-    trigger:
-      Platform.OS === "android" ? { channelId: ANDROID_CHANNEL_ID } : null,
-  });
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: n.title,
+        body: n.body,
+        data: {
+          ...(n.data ?? {}),
+          source: LOCAL_SOURCE,
+          type: n.type,
+          notificationId: n.id,
+          ride_id:
+            (n.data as { ride_id?: string } | null)?.ride_id ?? undefined,
+        },
+        sound: NOTIFICATION_SOUND,
+        priority: Notifications.AndroidNotificationPriority.MAX,
+        ...(Platform.OS === "android"
+          ? { vibrate: VIBRATION_PATTERN }
+          : {}),
+      },
+      // null = show immediately. On Android, channelId routes through our
+      // high-importance channel so sound + heads-up work.
+      trigger:
+        Platform.OS === "android"
+          ? { channelId: ANDROID_CHANNEL_ID }
+          : null,
+    });
+  } catch (err) {
+    if (__DEV__) console.warn("[push] presentLocalNotification failed", err);
+  }
 }
 
 /** Clears the app icon badge (call when the notifications screen is opened). */

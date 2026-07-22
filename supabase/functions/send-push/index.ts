@@ -43,6 +43,8 @@ interface ExpoMessage {
   sound: string;
   channelId: string;
   priority: "high";
+  ttl?: number;
+  _contentAvailable?: boolean;
 }
 
 Deno.serve(async (req) => {
@@ -80,10 +82,17 @@ Deno.serve(async (req) => {
         ...(record.data ?? {}),
         type: record.type,
         notificationId: record.id,
+        ride_id:
+          typeof record.data?.ride_id === "string"
+            ? record.data.ride_id
+            : undefined,
       },
       sound: SOUND,
       channelId: ANDROID_CHANNEL_ID,
       priority: "high",
+      // Keep the notification available for a day if the device is offline.
+      ttl: 86400,
+      _contentAvailable: true,
     }));
 
     // Expo accepts up to 100 messages per request.

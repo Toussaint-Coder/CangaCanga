@@ -1,5 +1,5 @@
 import { supabase } from "@/services/supabase";
-import { uploadProfilePicture } from "@/services/r2";
+import { uploadProfilePicture, type UploadProgress } from "@/services/r2";
 import { normalizePhone, phoneToAuthEmail } from "@/utils/phone";
 import i18n from "@/i18n";
 import type { Profile } from "@/types/models";
@@ -18,7 +18,9 @@ export interface RegisterInput {
   phoneNumber: string;
   password: string;
   profilePictureUri: string; // local file:// uri (required)
+  profilePictureMime?: string | null;
   vehiclePlateNumber?: string;
+  onUploadProgress?: UploadProgress;
 }
 
 export interface LoginInput {
@@ -30,8 +32,6 @@ export async function register(input: RegisterInput): Promise<Profile> {
   const phone = normalizePhone(input.phoneNumber);
   const email = phoneToAuthEmail(phone);
 
-  // 1. Create the auth user (session established immediately when email
-  //    confirmation is disabled).
   const { data: signUp, error: signUpError } = await supabase.auth.signUp({
     email,
     password: input.password,
@@ -50,16 +50,23 @@ export async function register(input: RegisterInput): Promise<Profile> {
     throw new Error(i18n.t("auth.registrationFailed"));
   }
 
-  // 2. Upload the (required) profile picture to R2.
-  let pictureUrl: string | null = null;
-  try {
-    pictureUrl = await uploadProfilePicture(input.profilePictureUri, user.id);
-  } catch (err) {
-    // Non-fatal: the account exists; the user can add a photo later.
-    if (__DEV__) console.warn("[auth] profile picture upload failed", err);
+  if (!signUp.session) {
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: input.password,
+    });
+    if (signInError) {
+      throw new Error(i18n.t("auth.registrationFailed"));
+    }
   }
 
-  // 3. Create the profile row.
+  const pictureUrl = await uploadProfilePicture(
+    input.profilePictureUri,
+    user.id,
+    input.profilePictureMime,
+    input.onUploadProgress,
+  );
+
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .insert({

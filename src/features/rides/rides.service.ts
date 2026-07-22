@@ -9,7 +9,7 @@ import type {
 } from "@/types/models";
 
 const DRIVER_SELECT =
-  "driver:profiles!rides_driver_id_fkey(id, full_name, profile_picture, rating, vehicle_plate_number)";
+  "driver:profiles!rides_driver_id_fkey(id, full_name, profile_picture, rating, vehicle_plate_number, phone_number)";
 
 const RIDE_WITH_DRIVER = `*, ${DRIVER_SELECT}`;
 
@@ -20,6 +20,7 @@ export interface CreateRideInput {
   availableSeats: number;
   price: number;
   note?: string;
+  vehiclePictureUrl?: string;
 }
 
 export async function createRide(input: CreateRideInput): Promise<Ride> {
@@ -61,6 +62,7 @@ export async function createRide(input: CreateRideInput): Promise<Ride> {
       available_seats: input.availableSeats,
       price: input.price,
       note: input.note?.trim() || null,
+      vehicle_picture: input.vehiclePictureUrl ?? null,
       distance_m,
       duration_s,
       status: "open",
@@ -137,7 +139,7 @@ export async function getNearbyRides(
   const driverIds = [...new Set(rides.map((r) => r.driver_id))];
   const { data: drivers } = await supabase
     .from("profiles")
-    .select("id, full_name, profile_picture, rating, vehicle_plate_number")
+    .select("id, full_name, profile_picture, rating, vehicle_plate_number, phone_number")
     .in("id", driverIds);
 
   const byId = new Map((drivers ?? []).map((d) => [d.id, d]));

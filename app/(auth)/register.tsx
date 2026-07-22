@@ -13,7 +13,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 import * as ImagePicker from "expo-image-picker";
-import { Camera, Car, Lock, Phone, User } from "lucide-react-native";
+import { Icon } from "@/components/ui/Icon";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -24,7 +24,7 @@ import {
   type RegisterForm,
 } from "@/features/auth/auth.schema";
 import { useRegister } from "@/features/auth/auth.hooks";
-import { useThemeColors } from "@/theme";
+import { fonts, useThemeColors } from "@/theme";
 
 export default function RegisterScreen() {
   const { t, i18n } = useTranslation();
@@ -32,8 +32,11 @@ export default function RegisterScreen() {
   const router = useRouter();
   const register = useRegister();
   const [pictureUri, setPictureUri] = useState<string | null>(null);
+  const [pictureMime, setPictureMime] = useState<string | null>(null);
   const [pictureError, setPictureError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Rebuild the schema when the language changes so messages are translated.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -57,6 +60,7 @@ export default function RegisterScreen() {
     });
     if (!result.canceled && result.assets[0]) {
       setPictureUri(result.assets[0].uri);
+      setPictureMime(result.assets[0].mimeType ?? null);
       setPictureError(null);
     }
   };
@@ -67,12 +71,24 @@ export default function RegisterScreen() {
       return;
     }
     setFormError(null);
+    setUploadProgress(0);
     register.mutate(
-      { ...values, profilePictureUri: pictureUri },
+      {
+        ...values,
+        profilePictureUri: pictureUri,
+        profilePictureMime: pictureMime,
+        onUploadProgress: setUploadProgress,
+      },
       {
         onSuccess: () => router.replace("/(tabs)"),
-        onError: (err: any) =>
-          setFormError(err.message ?? t("auth.register.genericError")),
+        onError: (err: any) => {
+          setUploadProgress(null);
+          setFormError(err.message ?? t("auth.register.genericError"));
+        },
+        onSettled: () => {
+          // Keep 100% briefly then clear if still on screen after success navigation.
+          setTimeout(() => setUploadProgress(null), 400);
+        },
       },
     );
   };
@@ -96,7 +112,11 @@ export default function RegisterScreen() {
 
           {/* Profile picture picker */}
           <View className="mb-6 items-center">
-            <Pressable onPress={pickImage} className="items-center">
+            <Pressable
+              onPress={pickImage}
+              disabled={register.isPending}
+              className="items-center"
+            >
               <View className="h-24 w-24 items-center justify-center overflow-hidden rounded-full border border-border bg-card">
                 {pictureUri ? (
                   <Image
@@ -105,13 +125,31 @@ export default function RegisterScreen() {
                     contentFit="cover"
                   />
                 ) : (
-                  <Camera size={26} color={colors.muted} />
+                  <Icon name="photo-camera" size={26} color={colors.muted} />
                 )}
+                {uploadProgress != null ? (
+                  <View className="absolute inset-0 items-center justify-center bg-black/45">
+                    <Text
+                      style={{ fontFamily: fonts.semibold }}
+                      className="text-sm text-white"
+                    >
+                      {Math.round(uploadProgress * 100)}%
+                    </Text>
+                    <View className="mt-2 h-1.5 w-16 overflow-hidden rounded-full bg-white/30">
+                      <View
+                        className="h-full rounded-full bg-white"
+                        style={{ width: `${Math.round(uploadProgress * 100)}%` }}
+                      />
+                    </View>
+                  </View>
+                ) : null}
               </View>
               <Text className="mt-2 text-sm font-medium text-accent">
-                {pictureUri
-                  ? t("auth.register.changePhoto")
-                  : t("auth.register.addPhoto")}
+                {uploadProgress != null
+                  ? t("common.uploading")
+                  : pictureUri
+                    ? t("auth.register.changePhoto")
+                    : t("auth.register.addPhoto")}
               </Text>
             </Pressable>
             {pictureError ? (
@@ -131,7 +169,7 @@ export default function RegisterScreen() {
                   onChangeText={field.onChange}
                   onBlur={field.onBlur}
                   error={fieldState.error?.message}
-                  leftIcon={<User size={18} color={colors.muted} />}
+                  leftIcon={<Icon name="person" size={18} color={colors.muted} />}
                 />
               )}
             />
@@ -148,7 +186,7 @@ export default function RegisterScreen() {
                   onChangeText={field.onChange}
                   onBlur={field.onBlur}
                   error={fieldState.error?.message}
-                  leftIcon={<Phone size={18} color={colors.muted} />}
+                  leftIcon={<Icon name="phone" size={18} color={colors.muted} />}
                 />
               )}
             />
@@ -160,12 +198,24 @@ export default function RegisterScreen() {
                 <Input
                   label={t("auth.register.password")}
                   placeholder={t("auth.register.passwordPlaceholder")}
-                  secureTextEntry
+                  secureTextEntry={!showPassword}
                   value={field.value}
                   onChangeText={field.onChange}
                   onBlur={field.onBlur}
                   error={fieldState.error?.message}
-                  leftIcon={<Lock size={18} color={colors.muted} />}
+                  leftIcon={<Icon name="lock" size={18} color={colors.muted} />}
+                  rightElement={
+                    <Pressable
+                      onPress={() => setShowPassword((v) => !v)}
+                      hitSlop={8}
+                    >
+                      <Icon
+                        name={showPassword ? "visibility-off" : "visibility"}
+                        size={18}
+                        color={colors.muted}
+                      />
+                    </Pressable>
+                  }
                 />
               )}
             />
@@ -182,7 +232,7 @@ export default function RegisterScreen() {
                   onChangeText={field.onChange}
                   onBlur={field.onBlur}
                   error={fieldState.error?.message}
-                  leftIcon={<Car size={18} color={colors.muted} />}
+                  leftIcon={<Icon name="directions-car" size={18} color={colors.muted} />}
                 />
               )}
             />

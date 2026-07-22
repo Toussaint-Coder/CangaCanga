@@ -28,13 +28,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   profile: null,
 
   initialize: async () => {
-    const { data } = await supabase.auth.getSession();
-    const session = data.session;
+    try {
+      const { data } = await supabase.auth.getSession();
+      const session = data.session;
 
-    if (session) {
-      const profile = await fetchMyProfile();
-      set({ session, profile, status: "authenticated" });
-    } else {
+      if (session) {
+        try {
+          const profile = await fetchMyProfile();
+          set({ session, profile, status: "authenticated" });
+        } catch {
+          // Session exists but profile fetch failed — still let the user in.
+          set({ session, profile: null, status: "authenticated" });
+        }
+      } else {
+        set({ session: null, profile: null, status: "unauthenticated" });
+      }
+    } catch {
+      // Never leave the splash screen stuck on a network/storage failure.
       set({ session: null, profile: null, status: "unauthenticated" });
     }
 
@@ -43,12 +53,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { data: sub } = supabase.auth.onAuthStateChange(
       async (_event, newSession) => {
         if (newSession) {
-          const profile = await fetchMyProfile();
-          set({
-            session: newSession,
-            profile,
-            status: "authenticated",
-          });
+          try {
+            const profile = await fetchMyProfile();
+            set({
+              session: newSession,
+              profile,
+              status: "authenticated",
+            });
+          } catch {
+            set({
+              session: newSession,
+              profile: null,
+              status: "authenticated",
+            });
+          }
         } else {
           set({ session: null, profile: null, status: "unauthenticated" });
         }

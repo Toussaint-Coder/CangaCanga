@@ -5,16 +5,17 @@ import {
   ScrollView,
   Text,
   View,
+  Pressable,
 } from "react-native";
 import { Link } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
-import { Eye, EyeOff, Lock, Phone } from "lucide-react-native";
-import { Pressable } from "react-native";
 
 import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
+import { MadeByBrand } from "@/components/ui/MadeByBrand";
 import { Screen } from "@/components/ui/Screen";
 import { Typography } from "@/components/ui/Typography";
 import { buildLoginSchema, type LoginForm } from "@/features/auth/auth.schema";
@@ -54,10 +55,7 @@ export default function LoginScreen() {
           contentContainerStyle={{ flexGrow: 1, padding: 24 }}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="mt-10 mb-8">
-            <View className="mb-6 h-14 w-14 items-center justify-center rounded-2xl bg-primary">
-              <Text className="text-xl font-bold text-secondary">C</Text>
-            </View>
+          <View className="mb-8 mt-10">
             <Typography variant="title">{t("auth.login.title")}</Typography>
             <Typography variant="caption" className="mt-1">
               {t("auth.login.subtitle")}
@@ -78,7 +76,7 @@ export default function LoginScreen() {
                   onChangeText={field.onChange}
                   onBlur={field.onBlur}
                   error={fieldState.error?.message}
-                  leftIcon={<Phone size={18} color={colors.muted} />}
+                  leftIcon={<Icon name="phone" size={18} color={colors.muted} />}
                 />
               )}
             />
@@ -95,17 +93,17 @@ export default function LoginScreen() {
                   onChangeText={field.onChange}
                   onBlur={field.onBlur}
                   error={fieldState.error?.message}
-                  leftIcon={<Lock size={18} color={colors.muted} />}
+                  leftIcon={<Icon name="lock" size={18} color={colors.muted} />}
                   rightElement={
                     <Pressable
                       onPress={() => setShowPassword((v) => !v)}
                       hitSlop={8}
                     >
-                      {showPassword ? (
-                        <EyeOff size={18} color={colors.muted} />
-                      ) : (
-                        <Eye size={18} color={colors.muted} />
-                      )}
+                      <Icon
+                        name={showPassword ? "visibility-off" : "visibility"}
+                        size={18}
+                        color={colors.muted}
+                      />
                     </Pressable>
                   }
                 />
@@ -133,6 +131,10 @@ export default function LoginScreen() {
                 </Text>
               </Pressable>
             </Link>
+          </View>
+
+          <View className="mt-auto pt-10">
+            <MadeByBrand />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

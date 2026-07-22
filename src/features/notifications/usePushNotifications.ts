@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -11,13 +11,22 @@ import { savePushToken } from "./notifications.service";
 import {
   configureNotificationHandler,
   ensureAndroidChannel,
+  ensureNotificationPermissions,
   registerForPushNotificationsAsync,
   setCurrentPushToken,
 } from "./push";
+import {
+  DAILY_REMINDER_TYPE,
+  scheduleDailyRideReminders,
+} from "./dailyReminders";
 
 // Install the foreground handler once at module load, before any component
 // mounts, so notifications received during startup are handled correctly.
-configureNotificationHandler();
+try {
+  configureNotificationHandler();
+} catch {
+  // Never let notification setup crash app startup.
+}
 
 function devicePlatform(): DevicePlatform {
   if (Platform.OS === "ios") return "ios";
@@ -25,12 +34,21 @@ function devicePlatform(): DevicePlatform {
   return "web";
 }
 
-/** Follows a notification's `ride_id` into the ride detail screen, if present. */
+/** Opens ride detail when `ride_id` is present; daily reminders go to home. */
 function useNotificationNavigation() {
   const router = useRouter();
   return (data: unknown) => {
-    const rideId = (data as { ride_id?: string } | null)?.ride_id;
-    if (rideId) router.push(`/ride/${rideId}`);
+    const payload = data as {
+      ride_id?: string;
+      type?: string;
+    } | null;
+    if (payload?.ride_id) {
+      router.push(`/ride/${payload.ride_id}`);
+      return;
+    }
+    if (payload?.type === DAILY_REMINDER_TYPE) {
+      router.push("/(tabs)");
+    }
   };
 }
 
@@ -40,6 +58,7 @@ function useNotificationNavigation() {
  *
  * - Registers the Expo push token and stores it in Supabase so the backend can
  *   deliver notifications while the app is backgrounded or killed.
+ * - Schedules daily local reminders (07:30 / 17:30) to book or create a ride.
  * - Handles the user tapping a notification (foreground, background, or from a
  *   cold start) by navigating to the relevant ride and refreshing caches.
  */
@@ -49,25 +68,38 @@ export function usePushNotifications() {
   const navigateFromData = useNotificationNavigation();
   const handledColdStart = useRef(false);
 
-  // Register token whenever the signed-in user changes.
+  // Register token whenever the signed-in user changes (and when returning
+  // to foreground, in case permission was granted in system settings).
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
 
-    (async () => {
+    const register = async () => {
       await ensureAndroidChannel();
+      await ensureNotificationPermissions();
+      if (!cancelled) {
+        void scheduleDailyRideReminders();
+      }
+
       const token = await registerForPushNotificationsAsync();
       if (cancelled || !token) return;
       setCurrentPushToken(token);
       try {
         await savePushToken(token, devicePlatform());
-      } catch {
-        // Non-fatal: in-app notifications still work via realtime.
+      } catch (err) {
+        if (__DEV__) console.warn("[push] savePushToken failed", err);
       }
-    })();
+    };
+
+    void register();
+
+    const appSub = AppState.addEventListener("change", (state) => {
+      if (state === "active") void register();
+    });
 
     return () => {
       cancelled = true;
+      appSub.remove();
     };
   }, [userId]);
 
