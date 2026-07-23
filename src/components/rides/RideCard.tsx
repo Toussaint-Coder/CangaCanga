@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 
-import { Avatar } from "@/components/ui/Avatar";
+import { Avatar, PresenceLabel } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
 import { RatingStars } from "@/components/ui/RatingStars";
@@ -35,15 +35,20 @@ export function RideCard({ ride, onPress }: RideCardProps) {
               uri={driver?.profile_picture}
               name={driver?.full_name}
               size={44}
+              showPresence
+              lastSeenAt={driver?.last_seen_at}
             />
             <View className="ml-3 flex-1">
-              <Text
-                style={{ fontFamily: fonts.semibold }}
-                className="text-base text-primary"
-                numberOfLines={1}
-              >
-                {driver?.full_name ?? t("rideCard.driver")}
-              </Text>
+              <View className="flex-row items-center">
+                <Text
+                  style={{ fontFamily: fonts.semibold }}
+                  className="flex-1 text-base text-primary"
+                  numberOfLines={1}
+                >
+                  {driver?.full_name ?? t("rideCard.driver")}
+                </Text>
+                <PresenceLabel lastSeenAt={driver?.last_seen_at} />
+              </View>
               <View className="mt-0.5 flex-row items-center">
                 <RatingStars rating={driver?.rating ?? 0} size={12} />
                 {driver?.vehicle_plate_number ? (

@@ -13,20 +13,27 @@ import { useTranslation } from "react-i18next";
 
 import { MapPlacePicker } from "@/components/rides/MapPlacePicker";
 import { PlaceSearchInput } from "@/components/rides/PlaceSearchInput";
+import { SavedRoutesList } from "@/components/rides/SavedRoutesList";
 import { Button } from "@/components/ui/Button";
 import { DateTimeField } from "@/components/ui/DateTimeField";
 import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
-import { Stepper } from "@/components/ui/Stepper";
 import { Typography } from "@/components/ui/Typography";
 import { isMapboxConfigured } from "@/config/env";
 import { getCurrentLocation } from "@/features/location/location.service";
+import {
+  getSavedRoutes,
+  getSavedVehiclePictureUrl,
+  MAX_SEATS,
+  rememberRoute,
+  resolveVehiclePictureUrl,
+  type SavedRoute,
+} from "@/features/rides/rideDrafts";
 import { useCreateRide } from "@/features/rides/rides.hooks";
 import { buildCreateRideSchema } from "@/features/rides/rides.schema";
 import { reverseGeocode } from "@/services/mapbox";
-import { uploadVehiclePicture } from "@/services/r2";
 import { useAuthStore } from "@/stores/authStore";
 import { fonts, useThemeColors } from "@/theme";
 import type { Place } from "@/types/models";
@@ -56,8 +63,20 @@ export default function CreateRideScreen() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [savedRoutes, setSavedRoutes] = useState<SavedRoute[]>([]);
 
   const isLift = price === "0";
+
+  useEffect(() => {
+    void (async () => {
+      const [routes, vehicleUrl] = await Promise.all([
+        getSavedRoutes(),
+        getSavedVehiclePictureUrl(),
+      ]);
+      setSavedRoutes(routes);
+      if (vehicleUrl) setVehicleUri(vehicleUrl);
+    })();
+  }, []);
 
   // Default pickup = current location.
   useEffect(() => {
@@ -76,6 +95,15 @@ export default function CreateRideScreen() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const applySavedRoute = (route: SavedRoute) => {
+    setPickup(route.pickup);
+    setDestination(route.destination);
+    if (route.seats) setSeats(route.seats);
+    if (route.price != null) setPrice(String(route.price));
+    if (route.note) setNote(route.note);
+    setErrors({});
+  };
 
   const pickVehiclePhoto = async (source: "camera" | "library") => {
     try {
@@ -129,7 +157,7 @@ export default function CreateRideScreen() {
     try {
       setUploading(true);
       setUploadProgress(0);
-      const vehiclePictureUrl = await uploadVehiclePicture(
+      const vehiclePictureUrl = await resolveVehiclePictureUrl(
         vehicleUri,
         userId,
         vehicleMime,
@@ -138,7 +166,16 @@ export default function CreateRideScreen() {
       createRide.mutate(
         { ...parsed.data, vehiclePictureUrl },
         {
-          onSuccess: (ride) => router.replace(`/ride/${ride.id}`),
+          onSuccess: async (ride) => {
+            await rememberRoute({
+              pickup: parsed.data.pickup,
+              destination: parsed.data.destination,
+              seats: parsed.data.availableSeats,
+              price: parsed.data.price,
+              note: parsed.data.note,
+            });
+            router.replace(`/ride/${ride.id}`);
+          },
           onError: (err: any) =>
             setSubmitError(err.message ?? t("create.genericError")),
           onSettled: () => setUploadProgress(null),
@@ -169,6 +206,8 @@ export default function CreateRideScreen() {
           </Typography>
 
           <View className="gap-y-4">
+            <SavedRoutesList routes={savedRoutes} onSelect={applySavedRoute} />
+
             {/* Vehicle picture */}
             <View>
               <Text
@@ -319,16 +358,27 @@ export default function CreateRideScreen() {
               />
             </View>
 
-            <View className="flex-row items-center justify-between rounded-2xl border border-border bg-card px-4 py-3">
-              <View>
-                <Text className="text-sm font-medium text-primary">
-                  {t("create.availableSeats")}
-                </Text>
-                <Text className="text-xs text-muted">
-                  {t("create.howManyJoin")}
-                </Text>
-              </View>
-              <Stepper value={seats} min={1} max={8} onChange={setSeats} />
+            <View className="rounded-2xl border border-border bg-card px-4 py-3">
+              <Text className="text-sm font-medium text-primary">
+                {t("create.availableSeats")}
+              </Text>
+              <Text className="mb-2 text-xs text-muted">
+                {t("create.howManyJoin")}
+              </Text>
+              <Input
+                keyboardType="number-pad"
+                value={String(seats)}
+                onChangeText={(text) => {
+                  const digits = text.replace(/\D/g, "");
+                  if (!digits) {
+                    setSeats(1);
+                    return;
+                  }
+                  const next = Math.min(MAX_SEATS, Math.max(1, Number(digits)));
+                  setSeats(next);
+                }}
+                error={errors.availableSeats}
+              />
             </View>
 
             <View>

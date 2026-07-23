@@ -41,4 +41,7 @@ export const STORAGE_KEYS = {
   lastKnownLocation: "last_known_location",
   language: "language",
   theme: "theme",
+  notificationPrefs: "notification_prefs",
+  driverVehiclePicture: "driver_vehicle_picture",
+  savedRoutes: "saved_routes",
 } as const;

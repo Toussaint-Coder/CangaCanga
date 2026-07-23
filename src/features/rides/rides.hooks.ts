@@ -13,8 +13,10 @@ import {
   getNearbyRides,
   getRide,
   listRides,
+  updateRide,
   type CreateRideInput,
   type RideFilters,
+  type UpdateRideInput,
 } from "./rides.service";
 
 export function useNearbyRides(location?: Coordinates, radiusMeters?: number) {
@@ -63,6 +65,23 @@ export function useCancelRide() {
     mutationFn: (rideId: string) => cancelRide(rideId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.rides.all });
+    },
+  });
+}
+
+export function useUpdateRide() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      rideId,
+      input,
+    }: {
+      rideId: string;
+      input: UpdateRideInput;
+    }) => updateRide(rideId, input),
+    onSuccess: (_ride, { rideId }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.rides.all });
+      qc.invalidateQueries({ queryKey: queryKeys.rides.detail(rideId) });
     },
   });
 }

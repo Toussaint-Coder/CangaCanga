@@ -17,6 +17,8 @@ import { hydrateLanguage } from "@/i18n";
 import { useAuthStore } from "@/stores/authStore";
 import { useThemeStore } from "@/stores/themeStore";
 import { useThemeColors } from "@/theme";
+import { AppErrorBoundary } from "@/components/ui/AppErrorBoundary";
+import { usePresenceHeartbeat } from "@/features/presence/presence";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -36,6 +38,8 @@ export default function RootLayout() {
   const [prefsReady, setPrefsReady] = useState(false);
   // When true we stop blocking on fonts/auth and show the UI.
   const [bootstrapped, setBootstrapped] = useState(false);
+
+  usePresenceHeartbeat();
 
   // Prefer a successful font load so Lufga is available before first paint.
   // fontError still unblocks so a bad font asset cannot brick the app forever.
@@ -83,28 +87,51 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <StatusBar style="auto" />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: colors.background },
-            }}
-          >
-            <Stack.Screen name="index" />
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="ride/[id]" />
-            <Stack.Screen
-              name="ride/create"
-              options={{ presentation: "modal" }}
-            />
-            <Stack.Screen
-              name="profile/edit"
-              options={{ presentation: "modal" }}
-            />
-          </Stack>
-        </QueryClientProvider>
+        <AppErrorBoundary>
+          <QueryClientProvider client={queryClient}>
+            <StatusBar style="auto" />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: colors.background },
+              }}
+            >
+              <Stack.Screen name="index" />
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="ride/[id]" />
+              <Stack.Screen
+                name="ride/create"
+                options={{ presentation: "modal" }}
+              />
+              <Stack.Screen
+                name="ride/edit/[id]"
+                options={{ presentation: "modal" }}
+              />
+              <Stack.Screen
+                name="profile/edit"
+                options={{ presentation: "modal" }}
+              />
+              <Stack.Screen name="legal/[doc]" />
+              <Stack.Screen
+                name="account/delete"
+                options={{ presentation: "modal" }}
+              />
+              <Stack.Screen
+                name="account/password"
+                options={{ presentation: "modal" }}
+              />
+              <Stack.Screen
+                name="account/notifications"
+                options={{ presentation: "modal" }}
+              />
+              <Stack.Screen
+                name="account/data"
+                options={{ presentation: "modal" }}
+              />
+            </Stack>
+          </QueryClientProvider>
+        </AppErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

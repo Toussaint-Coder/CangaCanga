@@ -42,6 +42,7 @@ export type ProfileRow = {
   last_lat: number | null;
   last_lng: number | null;
   last_location_at: string | null;
+  last_seen_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -126,6 +127,7 @@ type ProfileInsert = {
   last_lat?: number | null;
   last_lng?: number | null;
   last_location_at?: string | null;
+  last_seen_at?: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -226,6 +228,10 @@ export type Database = {
       };
       update_my_location: {
         Args: { p_lat: number; p_lng: number };
+        Returns: undefined;
+      };
+      touch_my_presence: {
+        Args: Record<string, never>;
         Returns: undefined;
       };
     };

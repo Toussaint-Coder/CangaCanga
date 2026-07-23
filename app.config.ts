@@ -26,6 +26,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.cangacanga.app",
+    buildNumber: "1",
     infoPlist: {
       NSLocationWhenInUseUsageDescription:
         "CangaCanga uses your location to show nearby rides and set your pickup point.",
@@ -35,10 +36,27 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         "CangaCanga needs the camera so you can take a profile or vehicle photo.",
       NSPhotoLibraryAddUsageDescription:
         "CangaCanga may save photos you take for your profile or vehicle.",
+      // Standard HTTPS only — declare for App Store export compliance.
+      ITSAppUsesNonExemptEncryption: false,
+    },
+    privacyManifests: {
+      NSPrivacyAccessedAPITypes: [
+        {
+          NSPrivacyAccessedAPIType:
+            "NSPrivacyAccessedAPICategoryUserDefaults",
+          NSPrivacyAccessedAPITypeReasons: ["CA92.1"],
+        },
+        {
+          NSPrivacyAccessedAPIType:
+            "NSPrivacyAccessedAPICategoryFileTimestamp",
+          NSPrivacyAccessedAPITypeReasons: ["C617.1"],
+        },
+      ],
     },
   },
   android: {
     package: "com.cangacanga.app",
+    versionCode: 2,
     adaptiveIcon: {
       foregroundImage: "./assets/adaptive-icon.png",
       backgroundColor: "#F8F9FA",
@@ -52,7 +70,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       "POST_NOTIFICATIONS",
       "VIBRATE",
       "RECEIVE_BOOT_COMPLETED",
-      "SCHEDULE_EXACT_ALARM",
     ],
   },
   web: {
@@ -80,6 +97,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         android: {
           kotlinVersion: "1.9.25",
+          // Google Play requires targetSdk 35+ for new uploads.
+          compileSdkVersion: 35,
+          targetSdkVersion: 35,
           // Keep release packaging simple/reliable. Size is already cut by
           // arm64-only. Enable minify later once the app launches cleanly.
           enableProguardInReleaseBuilds: false,
@@ -126,9 +146,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   extra: {
     router: { origin: false },
     eas: {
-      // Required for Expo push tokens on physical devices. Set in `.env`:
-      // EXPO_PUBLIC_EAS_PROJECT_ID=<uuid from `eas init` / expo.dev>
-      projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? "",
+      // Required by EAS Build / Expo push. Hardcoded because app.config.ts is
+      // dynamic and `eas` cannot auto-write this field.
+      projectId:
+        process.env.EXPO_PUBLIC_EAS_PROJECT_ID ||
+        "a778b96c-8070-4a25-ac2c-f7e17eceb721",
     },
   },
 });

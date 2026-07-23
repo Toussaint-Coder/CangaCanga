@@ -1,5 +1,6 @@
 import { supabase } from "@/services/supabase";
 import { getRoute } from "@/services/mapbox";
+import i18n from "@/i18n";
 import type {
   Coordinates,
   NearbyRide,
@@ -9,7 +10,7 @@ import type {
 } from "@/types/models";
 
 const DRIVER_SELECT =
-  "driver:profiles!rides_driver_id_fkey(id, full_name, profile_picture, rating, vehicle_plate_number, phone_number)";
+  "driver:profiles!rides_driver_id_fkey(id, full_name, profile_picture, rating, vehicle_plate_number, phone_number, last_seen_at)";
 
 const RIDE_WITH_DRIVER = `*, ${DRIVER_SELECT}`;
 
@@ -139,7 +140,7 @@ export async function getNearbyRides(
   const driverIds = [...new Set(rides.map((r) => r.driver_id))];
   const { data: drivers } = await supabase
     .from("profiles")
-    .select("id, full_name, profile_picture, rating, vehicle_plate_number, phone_number")
+    .select("id, full_name, profile_picture, rating, vehicle_plate_number, phone_number, last_seen_at")
     .in("id", driverIds);
 
   const byId = new Map((drivers ?? []).map((d) => [d.id, d]));
@@ -158,6 +159,92 @@ export async function getMyRidesAsDriver(): Promise<RideWithDriver[]> {
 
   if (error) throw error;
   return (data ?? []) as unknown as RideWithDriver[];
+}
+
+export interface UpdateRideInput {
+  pickup: Place;
+  destination: Place;
+  departureTime: string;
+  availableSeats: number;
+  price: number;
+  note?: string;
+  vehiclePictureUrl?: string | null;
+}
+
+export async function updateRide(
+  rideId: string,
+  input: UpdateRideInput,
+): Promise<Ride> {
+  const existing = await getRide(rideId);
+  if (!existing) throw new Error(i18n.t("ride.notFound"));
+
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user || existing.driver_id !== auth.user.id) {
+    throw new Error(i18n.t("editRide.notOwner"));
+  }
+
+  if (existing.status !== "open" && existing.status !== "full") {
+    throw new Error(i18n.t("editRide.notEditable"));
+  }
+
+  const reservedSeats = existing.seats_total - existing.available_seats;
+  if (input.availableSeats < reservedSeats) {
+    throw new Error(
+      i18n.t("validation.seatsReserved", { count: reservedSeats }),
+    );
+  }
+
+  let distance_m = existing.distance_m;
+  let duration_s = existing.duration_s;
+  try {
+    const route = await getRoute(
+      { latitude: input.pickup.latitude, longitude: input.pickup.longitude },
+      {
+        latitude: input.destination.latitude,
+        longitude: input.destination.longitude,
+      },
+    );
+    if (route) {
+      distance_m = route.distanceMeters;
+      duration_s = route.durationSeconds;
+    }
+  } catch {
+    /* optional */
+  }
+
+  const nextAvailable = input.availableSeats - reservedSeats;
+  let status = existing.status;
+  if (nextAvailable === 0 && existing.status === "open") {
+    status = "full";
+  } else if (nextAvailable > 0 && existing.status === "full") {
+    status = "open";
+  }
+
+  const { data, error } = await supabase
+    .from("rides")
+    .update({
+      pickup_label: input.pickup.label,
+      pickup_lat: input.pickup.latitude,
+      pickup_lng: input.pickup.longitude,
+      destination_label: input.destination.label,
+      destination_lat: input.destination.latitude,
+      destination_lng: input.destination.longitude,
+      departure_time: input.departureTime,
+      seats_total: input.availableSeats,
+      available_seats: nextAvailable,
+      price: input.price,
+      note: input.note?.trim() || null,
+      vehicle_picture: input.vehiclePictureUrl ?? existing.vehicle_picture,
+      distance_m,
+      duration_s,
+      status,
+    })
+    .eq("id", rideId)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return data;
 }
 
 export async function cancelRide(rideId: string): Promise<void> {

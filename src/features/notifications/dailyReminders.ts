@@ -39,6 +39,15 @@ export async function cancelDailyRideReminders(): Promise<void> {
  */
 export async function scheduleDailyRideReminders(): Promise<void> {
   try {
+    const { getNotificationPrefs } = await import(
+      "@/features/account/preferences"
+    );
+    const prefs = await getNotificationPrefs();
+    if (!prefs.dailyReminders || !prefs.pushEnabled) {
+      await cancelDailyRideReminders();
+      return;
+    }
+
     await ensureAndroidChannel();
 
     const { status } = await Notifications.getPermissionsAsync();

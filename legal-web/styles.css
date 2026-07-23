@@ -1,0 +1,281 @@
+/* CangaCanga legal site — matches app brand tokens */
+:root {
+  --primary: #111111;
+  --secondary: #ffffff;
+  --accent: #2563eb;
+  --accent-soft: #eff4ff;
+  --background: #f8f9fa;
+  --card: #ffffff;
+  --border: #ececec;
+  --muted: #6b7280;
+  --muted-light: #9ca3af;
+  --radius: 16px;
+  --max: 720px;
+  --font: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+  --font-display: "Fraunces", Georgia, serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font);
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--primary);
+  background:
+    radial-gradient(1200px 500px at 10% -10%, #dbe7ff 0%, transparent 55%),
+    radial-gradient(900px 400px at 100% 0%, #e8eef8 0%, transparent 50%),
+    var(--background);
+}
+
+a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  text-decoration: none;
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(12px);
+  background: rgba(248, 249, 250, 0.88);
+  border-bottom: 1px solid var(--border);
+}
+
+.header-inner {
+  max-width: calc(var(--max) + 4rem);
+  margin: 0 auto;
+  padding: 0.9rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.brand-logo {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: block;
+  object-fit: contain;
+  border-radius: 0.55rem;
+}
+
+.brand-name {
+  font-size: 1.05rem;
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.nav a:hover,
+.nav a[aria-current="page"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+main {
+  max-width: calc(var(--max) + 4rem);
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 4rem;
+}
+
+.hero {
+  margin-bottom: 2rem;
+}
+
+.hero h1 {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.hero p {
+  margin: 0;
+  color: var(--muted);
+  max-width: 36rem;
+}
+
+.meta {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  color: var(--muted-light);
+  font-size: 0.85rem;
+}
+
+.panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 4px);
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.toc {
+  margin: 0 0 2rem;
+  padding: 1rem 1.1rem;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  border: 1px solid #d6e3ff;
+}
+
+.toc strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+.toc ol {
+  margin: 0;
+  padding-left: 1.15rem;
+  color: var(--muted);
+}
+
+.toc a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.toc a:hover {
+  color: var(--accent);
+}
+
+article section {
+  padding: 1.35rem 0;
+  border-top: 1px solid var(--border);
+}
+
+article section:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+article h2 {
+  margin: 0 0 0.55rem;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+
+article p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.switcher {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+  margin: 2rem 0 0;
+}
+
+.switcher a {
+  display: block;
+  padding: 1rem 1.1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.switcher a span {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.switcher a:hover {
+  border-color: #bfd0f8;
+  background: var(--accent-soft);
+}
+
+.steps,
+.bullets {
+  margin: 0.85rem 0 0;
+  padding-left: 1.25rem;
+  color: var(--muted);
+}
+
+.steps li,
+.bullets li {
+  margin: 0.4rem 0;
+}
+
+.steps li::marker {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.site-footer {
+  max-width: calc(var(--max) + 4rem);
+  margin: 0 auto;
+  padding: 0 1.25rem 2.5rem;
+  color: var(--muted-light);
+  font-size: 0.85rem;
+}
+
+.site-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+@media (max-width: 560px) {
+  .header-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .switcher {
+    grid-template-columns: 1fr;
+  }
+}

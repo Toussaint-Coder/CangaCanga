@@ -4,6 +4,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/services/supabase";
 import { fetchMyProfile } from "@/features/auth/auth.service";
 import { deletePushToken } from "@/features/notifications/notifications.service";
+import { cancelDailyRideReminders } from "@/features/notifications/dailyReminders";
 import { getCurrentPushToken, setCurrentPushToken } from "@/features/notifications/push";
 import type { Profile } from "@/types/models";
 
@@ -84,12 +85,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setProfile: (profile) => set({ profile }),
 
   signOut: async () => {
-    // Stop pushes reaching this device after sign-out.
+    // Stop pushes and local reminders reaching this device after sign-out.
     const token = getCurrentPushToken();
     if (token) {
       await deletePushToken(token).catch(() => {});
       setCurrentPushToken(null);
     }
+    await cancelDailyRideReminders().catch(() => {});
     await supabase.auth.signOut();
     set({ session: null, profile: null, status: "unauthenticated" });
   },

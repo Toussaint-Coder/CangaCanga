@@ -17,8 +17,10 @@ import {
 } from "./push";
 import {
   DAILY_REMINDER_TYPE,
+  cancelDailyRideReminders,
   scheduleDailyRideReminders,
 } from "./dailyReminders";
+import { getNotificationPrefs } from "@/features/account/preferences";
 
 // Install the foreground handler once at module load, before any component
 // mounts, so notifications received during startup are handled correctly.
@@ -76,10 +78,21 @@ export function usePushNotifications() {
 
     const register = async () => {
       await ensureAndroidChannel();
-      await ensureNotificationPermissions();
-      if (!cancelled) {
-        void scheduleDailyRideReminders();
+      const prefs = await getNotificationPrefs();
+
+      if (prefs.pushEnabled) {
+        await ensureNotificationPermissions();
       }
+
+      if (!cancelled) {
+        if (prefs.dailyReminders && prefs.pushEnabled) {
+          void scheduleDailyRideReminders();
+        } else {
+          void cancelDailyRideReminders();
+        }
+      }
+
+      if (!prefs.pushEnabled) return;
 
       const token = await registerForPushNotificationsAsync();
       if (cancelled || !token) return;

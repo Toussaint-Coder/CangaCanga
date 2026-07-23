@@ -25,6 +25,7 @@ export interface RideWithDriver extends RideRow {
     | "rating"
     | "vehicle_plate_number"
     | "phone_number"
+    | "last_seen_at"
   >;
   distance_from_me?: number;
 }
@@ -38,6 +39,7 @@ export interface NearbyRide extends NearbyRideRow {
     | "rating"
     | "vehicle_plate_number"
     | "phone_number"
+    | "last_seen_at"
   >;
 }
 
@@ -46,7 +48,12 @@ export interface ReservationWithRelations extends ReservationRow {
   ride: RideWithDriver;
   passenger: Pick<
     ProfileRow,
-    "id" | "full_name" | "profile_picture" | "rating" | "phone_number"
+    | "id"
+    | "full_name"
+    | "profile_picture"
+    | "rating"
+    | "phone_number"
+    | "last_seen_at"
   >;
 }
 

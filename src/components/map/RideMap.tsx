@@ -22,6 +22,8 @@ interface RideMapProps {
   routeCoordinates?: [number, number][]; // [lng, lat] GeoJSON order
   zoom?: number;
   showUserLocation?: boolean;
+  /** Keep the camera on `center` as it updates (e.g. live navigation). */
+  followCenter?: boolean;
   /** Fixed height. Omit (or pass with `fill`) to stretch with flex:1. */
   height?: number;
   /** Stretch to fill the parent (use inside a `flex-1` container). */
@@ -58,6 +60,7 @@ export function RideMap({
   routeCoordinates,
   zoom = 12,
   showUserLocation = true,
+  followCenter = false,
   height = 220,
   fill = false,
   rounded = true,
@@ -99,6 +102,12 @@ export function RideMap({
     setCameraCenter(center);
   }, [center]);
 
+  // Live navigation: keep camera on the moving user.
+  useEffect(() => {
+    if (!followCenter || !center) return;
+    setCameraCenter(center);
+  }, [followCenter, center]);
+
   // When picking on the map, keep the camera on the dropped pin.
   useEffect(() => {
     if (!pickup || !onCoordinatePress) return;
@@ -107,12 +116,13 @@ export function RideMap({
 
   // Center between pickup and destination on ride detail (not place-picking).
   useEffect(() => {
+    if (followCenter) return;
     if (!pickup || !destination || onCoordinatePress) return;
     setCameraCenter({
       latitude: (pickup.latitude + destination.latitude) / 2,
       longitude: (pickup.longitude + destination.longitude) / 2,
     });
-  }, [pickup, destination, onCoordinatePress]);
+  }, [pickup, destination, onCoordinatePress, followCenter]);
 
   const radius = rounded ? 20 : 0;
   const boxStyle = fill

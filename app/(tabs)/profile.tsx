@@ -1,8 +1,8 @@
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { Avatar } from "@/components/ui/Avatar";
+import { Avatar, PresenceLabel } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { MadeByBrand } from "@/components/ui/MadeByBrand";
@@ -20,6 +20,8 @@ import {
   useThemeStore,
   type ThemePreference,
 } from "@/stores/themeStore";
+
+const href = (path: string) => path as Href;
 
 export default function ProfileScreen() {
   const { t, i18n } = useTranslation();
@@ -62,10 +64,16 @@ export default function ProfileScreen() {
               uri={profile?.profile_picture}
               name={profile?.full_name}
               size={88}
+              showPresence
+              lastSeenAt={new Date().toISOString()}
             />
             <Typography variant="heading" className="mt-3">
               {profile?.full_name}
             </Typography>
+            <PresenceLabel
+              lastSeenAt={new Date().toISOString()}
+              className="mt-1 text-xs text-success"
+            />
             <View className="mt-1 flex-row items-center">
               <Icon name="star" size={13} color={colors.star} />
               <Text
@@ -195,14 +203,83 @@ export default function ProfileScreen() {
             <ActionRow
               icon="manage-accounts"
               label={t("profile.editProfile")}
-              onPress={() => router.push("/profile/edit")}
+              onPress={() => router.push(href("/profile/edit"))}
             />
             <View className="h-px bg-border" />
+            <ActionRow
+              icon="lock"
+              label={t("profile.changePassword")}
+              onPress={() => router.push(href("/account/password"))}
+            />
+            <View className="h-px bg-border" />
+            <ActionRow
+              icon="notifications"
+              label={t("profile.notificationSettings")}
+              onPress={() => router.push(href("/account/notifications"))}
+            />
+            <View className="h-px bg-border" />
+            <ActionRow
+              icon="image"
+              label={t("profile.downloadData")}
+              onPress={() => router.push(href("/account/data"))}
+            />
+          </Card>
+        </View>
+
+        <View className="mt-4 px-5">
+          <Text
+            style={{ fontFamily: fonts.medium }}
+            className="mb-2 ml-1 text-xs text-muted"
+          >
+            {t("profile.legal")}
+          </Text>
+          <Card padded={false}>
+            <ActionRow
+              icon="visibility"
+              label={t("legal.privacy.title")}
+              onPress={() => router.push(href("/legal/privacy"))}
+            />
+            <View className="h-px bg-border" />
+            <ActionRow
+              icon="confirmation-number"
+              label={t("legal.terms.title")}
+              onPress={() => router.push(href("/legal/terms"))}
+            />
+            <View className="h-px bg-border" />
+            <ActionRow
+              icon="group"
+              label={t("legal.community.title")}
+              onPress={() => router.push(href("/legal/community"))}
+            />
+            <View className="h-px bg-border" />
+            <ActionRow
+              icon="place"
+              label={t("legal.safety.title")}
+              onPress={() => router.push(href("/legal/safety"))}
+            />
+            <View className="h-px bg-border" />
+            <ActionRow
+              icon="layers"
+              label={t("legal.data.title")}
+              onPress={() => router.push(href("/legal/data"))}
+            />
+          </Card>
+        </View>
+
+        <View className="mt-4 px-5">
+          <Card padded={false}>
             <ActionRow
               icon="logout"
               label={t("profile.logout")}
               danger
               onPress={confirmLogout}
+            />
+            <View className="h-px bg-border" />
+            <ActionRow
+              icon="cancel"
+              label={t("profile.deleteAccount")}
+              danger
+              onPress={() => router.push(href("/account/delete"))}
             />
           </Card>
         </View>
@@ -288,7 +365,12 @@ function ActionRow({
 }) {
   const colors = useThemeColors();
   return (
-    <Pressable onPress={onPress} className="flex-row items-center p-4">
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      className="min-h-[48px] flex-row items-center p-4"
+    >
       <Icon
         name={icon}
         size={18}

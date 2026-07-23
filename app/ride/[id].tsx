@@ -18,7 +18,8 @@ import { Icon, type IconName } from "@/components/ui/Icon";
 
 import { RideMap } from "@/components/map/RideMap";
 import { MAP_STYLE_SATELLITE } from "@/components/map/mapbox";
-import { Avatar } from "@/components/ui/Avatar";
+import { NavigateToPickupModal } from "@/components/rides/NavigateToPickupModal";
+import { Avatar, PresenceLabel } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -54,6 +55,7 @@ export default function RideDetailsScreen() {
   const router = useRouter();
   const userId = useCurrentUserId();
   const [mapFullscreen, setMapFullscreen] = useState(false);
+  const [navigateOpen, setNavigateOpen] = useState(false);
 
   const { data: ride, isLoading } = useRide(id);
   const reserve = useReserveSeat();
@@ -175,6 +177,18 @@ export default function RideDetailsScreen() {
               </Text>
             </Pressable>
           </View>
+          {!isDriver ? (
+            <View className="mt-3">
+              <Button
+                label={t("ride.takeMeToRide")}
+                variant="secondary"
+                leftIcon={
+                  <Icon name="navigation" size={16} color={colors.secondary} />
+                }
+                onPress={() => setNavigateOpen(true)}
+              />
+            </View>
+          ) : null}
         </View>
 
         {/* Route summary */}
@@ -244,14 +258,19 @@ export default function RideDetailsScreen() {
                 uri={ride.driver?.profile_picture}
                 name={ride.driver?.full_name}
                 size={52}
+                showPresence
+                lastSeenAt={ride.driver?.last_seen_at}
               />
               <View className="ml-3 flex-1">
-                <Text
-                  style={{ fontFamily: fonts.semibold }}
-                  className="text-base text-primary"
-                >
-                  {ride.driver?.full_name}
-                </Text>
+                <View className="flex-row items-center">
+                  <Text
+                    style={{ fontFamily: fonts.semibold }}
+                    className="flex-1 text-base text-primary"
+                  >
+                    {ride.driver?.full_name}
+                  </Text>
+                  <PresenceLabel lastSeenAt={ride.driver?.last_seen_at} />
+                </View>
                 <View className="mt-1 flex-row items-center">
                   <RatingStars rating={ride.driver?.rating ?? 0} size={13} />
                   {ride.driver?.vehicle_plate_number ? (
@@ -348,15 +367,25 @@ export default function RideDetailsScreen() {
         ) : null}
 
         {/* Actions */}
-        <View className="mt-8 px-5">
+        <View className="mt-8 gap-y-3 px-5">
           {isDriver ? (
             ride.status === "open" || ride.status === "full" ? (
-              <Button
-                label={t("ride.cancelRide")}
-                variant="danger"
-                onPress={handleCancelRide}
-                loading={cancelRide.isPending}
-              />
+              <>
+                <Button
+                  label={t("ride.editRide")}
+                  variant="secondary"
+                  leftIcon={
+                    <Icon name="event" size={16} color={colors.secondary} />
+                  }
+                  onPress={() => router.push(`/ride/edit/${ride.id}`)}
+                />
+                <Button
+                  label={t("ride.cancelRide")}
+                  variant="danger"
+                  onPress={handleCancelRide}
+                  loading={cancelRide.isPending}
+                />
+              </>
             ) : null
           ) : canReserve ? (
             <Button
@@ -415,6 +444,13 @@ export default function RideDetailsScreen() {
           </View>
         </View>
       </Modal>
+
+      <NavigateToPickupModal
+        visible={navigateOpen}
+        pickup={{ latitude: ride.pickup_lat, longitude: ride.pickup_lng }}
+        pickupLabel={ride.pickup_label}
+        onClose={() => setNavigateOpen(false)}
+      />
     </Screen>
   );
 }
@@ -452,14 +488,19 @@ function ReservationRequestRow({
           uri={reservation.passenger?.profile_picture}
           name={reservation.passenger?.full_name}
           size={40}
+          showPresence
+          lastSeenAt={reservation.passenger?.last_seen_at}
         />
         <View className="ml-3 flex-1">
-          <Text
-            style={{ fontFamily: fonts.semibold }}
-            className="text-sm text-primary"
-          >
-            {reservation.passenger?.full_name}
-          </Text>
+          <View className="flex-row items-center">
+            <Text
+              style={{ fontFamily: fonts.semibold }}
+              className="flex-1 text-sm text-primary"
+            >
+              {reservation.passenger?.full_name}
+            </Text>
+            <PresenceLabel lastSeenAt={reservation.passenger?.last_seen_at} />
+          </View>
           <Text
             style={{ fontFamily: fonts.regular }}
             className="text-xs text-muted"

@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import { Image } from "expo-image";
-import { Link, useRouter } from "expo-router";
+import { Link, useRouter, type Href } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
@@ -26,6 +26,8 @@ import {
 import { useRegister } from "@/features/auth/auth.hooks";
 import { fonts, useThemeColors } from "@/theme";
 
+const href = (path: string) => path as Href;
+
 export default function RegisterScreen() {
   const { t, i18n } = useTranslation();
   const colors = useThemeColors();
@@ -37,6 +39,7 @@ export default function RegisterScreen() {
   const [formError, setFormError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   // Rebuild the schema when the language changes so messages are translated.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -68,6 +71,10 @@ export default function RegisterScreen() {
   const onSubmit = (values: RegisterForm) => {
     if (!pictureUri) {
       setPictureError(t("auth.register.pictureRequired"));
+      return;
+    }
+    if (!acceptedTerms) {
+      setFormError(t("auth.register.acceptRequired"));
       return;
     }
     setFormError(null);
@@ -241,10 +248,50 @@ export default function RegisterScreen() {
               <Text className="text-sm text-danger">{formError}</Text>
             ) : null}
 
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: acceptedTerms }}
+              onPress={() => setAcceptedTerms((v) => !v)}
+              className="mb-2 flex-row items-start"
+            >
+              <View
+                className="mr-3 mt-0.5 h-5 w-5 items-center justify-center rounded border"
+                style={{
+                  borderColor: acceptedTerms ? colors.accent : colors.border,
+                  backgroundColor: acceptedTerms ? colors.accent : "transparent",
+                }}
+              >
+                {acceptedTerms ? (
+                  <Icon name="check" size={14} color={colors.secondary} />
+                ) : null}
+              </View>
+              <Text
+                style={{ fontFamily: fonts.regular }}
+                className="flex-1 text-sm leading-5 text-muted"
+              >
+                {t("auth.register.acceptPrefix")}{" "}
+                <Text
+                  className="text-accent"
+                  onPress={() => router.push(href("/legal/terms"))}
+                >
+                  {t("legal.terms.title")}
+                </Text>{" "}
+                {t("auth.register.acceptAnd")}{" "}
+                <Text
+                  className="text-accent"
+                  onPress={() => router.push(href("/legal/privacy"))}
+                >
+                  {t("legal.privacy.title")}
+                </Text>
+                .
+              </Text>
+            </Pressable>
+
             <Button
               label={t("auth.register.submit")}
               onPress={handleSubmit(onSubmit)}
               loading={register.isPending}
+              disabled={!acceptedTerms || register.isPending}
             />
           </View>
 
